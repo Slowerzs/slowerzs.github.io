@@ -58,6 +58,16 @@ hr {
 
 /* Partial: Header */
 
+img[src$='#floatleft']
+{
+ float:left;
+}
+
+img[src$='#floatright']
+{
+ float:right;
+}
+
 .header a {
     text-decoration: none;
 }
