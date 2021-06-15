@@ -8,13 +8,6 @@ body {
 
 /* Fix jumping scrollbar when switching to long pages */
 
-.centered {
-    width: 100%;
-/*    margin-left: 20%;
-    transform: translateX(-20%);*/
-    padding-bottom: 1rem;
-    padding-top: 1rem;
-}
 
 html {
     margin-left: calc(100vw - 100%);
@@ -158,6 +151,11 @@ img[src$='#floatright']
 }
 
 /* centered, boxed blog post images */
+.centered {
+    display: flex;
+    margin-left: auto;
+    margin-right: auto;
+}
 
 .content .figure img {
     display: block;

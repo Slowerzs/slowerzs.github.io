@@ -6,14 +6,26 @@
     <description>Recent content on Slowerzs&#39; blog</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
-    <lastBuildDate>Mon, 03 May 2021 02:54:53 +0200</lastBuildDate><atom:link href="https://slowerzs.github.io/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Tue, 15 Jun 2021 15:11:48 +0200</lastBuildDate><atom:link href="https://slowerzs.github.io/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>THCon 2021 - Inception</title>
+      <link>https://slowerzs.github.io/posts/thcon-2021-inception/</link>
+      <pubDate>Tue, 15 Jun 2021 15:11:48 +0200</pubDate>
+      
+      <guid>https://slowerzs.github.io/posts/thcon-2021-inception/</guid>
+      <description>Inception Inception was a binary exploitation challenge, created by Voydstack. It was a heap challenge, involving Seccomp.
+Discovery We are given the binary, the libc, as well as the path to the flag, /home/user/flag.txt.
+Playing with the binary, it looks like a typical heap exploitation challenge : we can create dreams of any size lesser than 0x800 bytes, edit dreams, show their content, as well as delete them. Creating and deleting dreams is allocating and freeing chunks respectively.</description>
+    </item>
+    
     <item>
       <title>About Me</title>
       <link>https://slowerzs.github.io/about/</link>
       <pubDate>Mon, 03 May 2021 22:41:14 +0200</pubDate>
       
       <guid>https://slowerzs.github.io/about/</guid>
-      <description>I&amp;rsquo;m Slowerzs, a French CTF player, who enjoys cybersecurity challenges, ranging from binary exploitation and reverse engineering to web exploitation. I also regularily play on Root-Me and HackTheBox. I&amp;rsquo;ll publish here some of my writeups, of challenges I found interesting.</description>
+      <description>I&amp;rsquo;m Slowerzs, a French CTF player, who enjoys cybersecurity challenges, ranging from binary exploitation and reverse engineering to web exploitation. I also regularily play on Root-Me and HackTheBox. I&amp;rsquo;ll publish here some of my writeups, of challenges I found interesting.
+ </description>
     </item>
     
     <item>

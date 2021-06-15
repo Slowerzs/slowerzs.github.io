@@ -6,7 +6,18 @@
     <description>Recent content in Posts on Slowerzs&#39; blog</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
-    <lastBuildDate>Mon, 03 May 2021 02:54:53 +0200</lastBuildDate><atom:link href="https://slowerzs.github.io/posts/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Tue, 15 Jun 2021 15:11:48 +0200</lastBuildDate><atom:link href="https://slowerzs.github.io/posts/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>THCon 2021 - Inception</title>
+      <link>https://slowerzs.github.io/posts/thcon-2021-inception/</link>
+      <pubDate>Tue, 15 Jun 2021 15:11:48 +0200</pubDate>
+      
+      <guid>https://slowerzs.github.io/posts/thcon-2021-inception/</guid>
+      <description>Inception Inception was a binary exploitation challenge, created by Voydstack. It was a heap challenge, involving Seccomp.
+Discovery We are given the binary, the libc, as well as the path to the flag, /home/user/flag.txt.
+Playing with the binary, it looks like a typical heap exploitation challenge : we can create dreams of any size lesser than 0x800 bytes, edit dreams, show their content, as well as delete them. Creating and deleting dreams is allocating and freeing chunks respectively.</description>
+    </item>
+    
     <item>
       <title>FCSC 2021 - ShuffleMe</title>
       <link>https://slowerzs.github.io/posts/fcsc-2021-shuffleme/</link>
