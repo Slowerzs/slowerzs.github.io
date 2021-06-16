@@ -94,7 +94,7 @@
     <h1 id="inception">Inception</h1>
 <p>Inception was a binary exploitation challenge, created by <a href="https://twitter.com/voydstack">Voydstack</a>. It was a heap challenge, involving Seccomp.</p>
 <h2 id="discovery">Discovery</h2>
-<p>We are given the binary, the libc, as well as the path to the flag, <code>/home/user/flag.txt</code>.</p>
+<p>We are given the binary, the libc, as well as the path to the flag, <code>/home/user/flag.txt</code>. The version of the libc is 2.27.</p>
 <p>Playing with the binary, it looks like a typical heap exploitation challenge : we can create <code>dreams</code> of any size lesser than 0x800 bytes, edit <code>dreams</code>, show their content, as well as delete them. Creating and deleting <code>dreams</code> is allocating and freeing chunks respectively.
 Dreams are identified by an index.</p>
 <pre><code class="language-raw" data-lang="raw">-= Dream Book =-
@@ -228,6 +228,7 @@ However, if we created a <code>dream</code> whose size was filling the content o
 0x55555555a280: 0x000055555555a260      0x000055555555a010 &lt;- data of freed chunk 2
 </code></pre><p>In the above example, I freed chunk 1 then chunk 2, and in the data of chunk 2, the first 8 bytes are a pointer to the next chunk in the tcache bin. This is a heap address and a perfect target for our leak.</p>
 <p>To actually get the value, we will create two <code>dreams</code> and free them to get in the above situation, then allocate a new <code>dream</code> with a content size of 1 (we cannot do 0 bytes), and then view its content. Since we are creating the chunk, we will overwrite the least significate byte of the pointer, but luckily for us, the base address of the heap is page aligned, which means that last 12 bits of the base address of the heap are zeros. We can therefore safely set these 12 bits to 0 to get our leak (ignoring the 8 bits we overwrote).</p>
+<p>In newer version of the glibc, this is not as straightforward.</p>
 <p>Scripting this in python, we get :</p>
 <div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">add(0x10, <span style="color:#a31515">&#39;azer&#39;</span>)
 add(0x10, <span style="color:#a31515">&#39;azer&#39;</span>)
@@ -276,7 +277,7 @@ Chunk(addr=0x55939522bcd0, size=0x210, flags=PREV_INUSE)
 0x55939522b260: 0x00007f62644d1ca0      0x00007f62644d1ca0
 </code></pre><p>We have four chunk, the first one being free, while the other 3 are in use. We can see two libc address : this is why we chose a size of <code>0x4f0</code> for our dream : it creates a chunk of size <code>0x500</code>, which is too big to go in either the <code>tcache</code> or <code>fastbins</code>, so it ends up in the <code>unsorted bin</code>, which is a doubly linked list, whose head is in the libc, and the freed chunks have a forward and backward pointer to the list, this is why we have this address here. So we actually put a libc address on the heap.</p>
 <p>Next, we will leverage the second vulnerability to clear the least signigicant bit of the <code>cccc</code> chunk, updating the <code>PREV_INUSE</code> flag. This is also why we <code>0x4F0</code> for the dream size, it creates a <code>0x500</code> chunk, and so while clearing this bit, we do not shrink the chunk size. This will make <code>malloc</code> think that the chunk <code>bbbb</code> is free whie it is not.
-This is not sufficient for our goal : we also need to update the <code>prev_size</code> field of the chunk <code>cccc</code> to make it think that the previous chunk is <code>aaaa</code>. Since this field is the first 8 bytes of the metadata of chunk <code>cccc</code>, this is also the last 8 bytes of chunk <code>bbbb</code>, which we can edit. So we will update it to be <code>0x570</code>, the size of chunk <code>aaaa</code> + <code>bbbb</code>, making it believe there is only one chunk below</p>
+This is not sufficient for our goal : we also need to update the <code>prev_size</code> field of the chunk <code>cccc</code> to make it thinks that the previous chunk is <code>aaaa</code>. Since this field is the first 8 bytes of the metadata of chunk <code>cccc</code>, this is also the last 8 bytes of chunk <code>bbbb</code>, which we can edit. So we will update it to be <code>0x570</code>, the size of chunk <code>aaaa</code> + <code>bbbb</code>, making it believe there is only one chunk below</p>
 <p>Let&rsquo;s continue our script :</p>
 <div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">add(0x4f0, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;aaaa&#39;</span>)
 add(0x680, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;bbbb&#39;</span>)
