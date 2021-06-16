@@ -162,7 +162,7 @@ Afterwards, it zeroes out a stack buffer, and calls <code>scanf(&quot;%70s&quot;
 Finally, it calls a function at <code>0x401230</code>, with our stack buffer and the integer as arguments. If the return value is <code>0x460000</code>, it prints <code>Yay!</code>, otherwise <code>Nope.</code>. So we know the real magic happens in this function, the goal is to get this function to return <code>0x460000</code></p>
 <h2 id="the-main-logic">The main logic</h2>
 <p>Let&rsquo;s have a look at the function at <code>0x401230</code>.</p>
-<pre><code>            0x00401230      4831db         xor rbx, rbx
+<pre><code class="language-x86asm" data-lang="x86asm">            0x00401230      4831db         xor rbx, rbx
             0x00401233      4d31c9         xor r9, r9
             0x00401236      4d31db         xor r11, r11
             0x00401239      49c7c4330000.  mov r12, 0x33               ; '3' ; 51
@@ -247,7 +247,7 @@ md = Cs(CS_ARCH_X86, CS_MODE_64)
     print_first_instructions(i)
 
 </code></pre></div><p>Let&rsquo;s have a look at the output for the first values :</p>
-<pre><code>---------0x0---------                                                                                                                                                     
+<pre><code class="language-x86asm" data-lang="x86asm">---------0x0---------                                                                                                                                                     
 0x40200d:       add     r11, r12                                                                                                                                        
 0x4016dd:       mov     bl, byte ptr [rdi + 0xa]                                                                                                                        
 0x4017ed:       mov     bh, bl                                                                                                                                          
@@ -380,8 +380,8 @@ md = Cs(CS_ARCH_X86, CS_MODE_64)
 
 
 get_flag()
-</code></pre></div><p>With this, we get the flag : <code>FCSC{af22cfdd46bfc8105cb28e04988f904049dd60be1245718ffef5b9bbf9b509d5}</code>
-We did not check how it calculates the return value to get <code>0x460000</code>, but that was efficient.</p>
+</code></pre></div><p>With this, we get the flag : <code>FCSC{af22cfdd46bfc8105cb28e04988f904049dd60be1245718ffef5b9bbf9b509d5}</code></p>
+<p>We did not check how it calculates the return value to get <code>0x460000</code>, but that was efficient.</p>
 
 
 
@@ -418,7 +418,11 @@ We did not check how it calculates the return value to get <code>0x460000</code>
         
             <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.2.0/languages/c.min.js" defer></script>
         
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.2.0/languages/asm.min.js" defer></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.2.0/languages/x86asm.min.js" defer></script>
+        
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.2.0/languages/armasm.min.js" defer></script>
+        
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.2.0/languages/bash.min.js" defer></script>
         
         <script>
             window.addEventListener('load', function() {
