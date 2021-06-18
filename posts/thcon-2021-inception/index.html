@@ -529,7 +529,7 @@ delete(5)                                               <span style="color:#0080
 [*] Switching to interactive mode
 root:x:0:0::/root:/bin/bash
 ...
-</code></pre></div><p>When running it remotely, I just had to change the fd of the open file to be 5 instead of 3, probably because the program had additionnal open file descriptors due to the remote connexion.</p>
+</code></pre></div><p>When running it remotely, I just had to change the fd of the open file to be 5 instead of 3, probably because the program had additionnal open file descriptors due to the remote connection.</p>
 <p>This was a nice challenge :)</p>
 <h2 id="full-exploit">Full exploit</h2>
 <div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#00f">from</span> pwn <span style="color:#00f">import</span> *
