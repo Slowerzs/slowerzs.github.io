@@ -98,17 +98,17 @@
 </blockquote>
 <h2 id="discovery">Discovery</h2>
 <p>First, we identify what type of binary this :</p>
-<pre><code class="language-raw" data-lang="raw">$ file shuffleMe 
+<pre tabindex="0"><code class="language-raw" data-lang="raw">$ file shuffleMe 
 shuffleMe: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, for GNU/Linux 3.2.0, stripped
 </code></pre><p>This is a 64-bit ELF. It is stripped. Let&rsquo;s try running the binary :</p>
-<pre><code class="language-raw" data-lang="raw">$ ./shuffleMe 
+<pre tabindex="0"><code class="language-raw" data-lang="raw">$ ./shuffleMe 
 Usage: ./shuffleMe &lt;secret&gt;
 $ ./shuffleMe 1
 bobcat
 Nope.
 </code></pre><p>The program expects a secret as a first argument, then waits for input through stdin. Afterwards, it simply says <code>Nope.</code>
 Let&rsquo;s have a look at the assembly of the program - starting with the main function.</p>
-<pre><code>            0x00401172      55             push rbp
+<pre tabindex="0"><code>            0x00401172      55             push rbp
             0x00401173      4889e5         mov rbp, rsp
             0x00401176      4883ec70       sub rsp, 0x70
             0x0040117a      897d9c         mov dword [rbp - 0x64], edi
@@ -162,7 +162,7 @@ Afterwards, it zeroes out a stack buffer, and calls <code>scanf(&quot;%70s&quot;
 Finally, it calls a function at <code>0x401230</code>, with our stack buffer and the integer as arguments. If the return value is <code>0x460000</code>, it prints <code>Yay!</code>, otherwise <code>Nope.</code>. So we know the real magic happens in this function, the goal is to get this function to return <code>0x460000</code></p>
 <h2 id="the-main-logic">The main logic</h2>
 <p>Let&rsquo;s have a look at the function at <code>0x401230</code>.</p>
-<pre><code class="language-x86asm" data-lang="x86asm">            0x00401230      4831db         xor rbx, rbx
+<pre tabindex="0"><code class="language-x86asm" data-lang="x86asm">            0x00401230      4831db         xor rbx, rbx
             0x00401233      4d31c9         xor r9, r9
             0x00401236      4d31db         xor r11, r11
             0x00401239      49c7c4330000.  mov r12, 0x33               ; '3' ; 51
@@ -247,7 +247,7 @@ md = Cs(CS_ARCH_X86, CS_MODE_64)
     print_first_instructions(i)
 
 </code></pre></div><p>Let&rsquo;s have a look at the output for the first values :</p>
-<pre><code class="language-x86asm" data-lang="x86asm">---------0x0---------                                                                                                                                                     
+<pre tabindex="0"><code class="language-x86asm" data-lang="x86asm">---------0x0---------                                                                                                                                                     
 0x40200d:       add     r11, r12                                                                                                                                        
 0x4016dd:       mov     bl, byte ptr [rdi + 0xa]                                                                                                                        
 0x4017ed:       mov     bh, bl                                                                                                                                          
@@ -314,7 +314,7 @@ md = Cs(CS_ARCH_X86, CS_MODE_64)
 ...
 </code></pre><p>The first thing that we notice is that in each case, it takes on byte from <code>[rdi + x]</code>, and perform some <code>xor</code> operations on it. Remember that in <code>rdi</code> we have our first argument to the function, the address of our input. So it is taking one byte from our input. More so, it seems to do it in an incremental manner, but starts at different offset each time. So, to find out the correct argument, we probably have to find on which starts to take values from <code>[rdi + 0]</code>.</p>
 <p>It is the case for <code>0xc1</code> !</p>
-<pre><code>---------0xc1---------
+<pre tabindex="0"><code>---------0xc1---------
 0x40275d:       shl     r10, 8
 0x40226d:       dec     rax
 0x4024bd:       mov     bl, byte ptr [rdi]
