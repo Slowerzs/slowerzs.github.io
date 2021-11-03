@@ -96,7 +96,7 @@ I find it difficult to find a place to start to learn how the kernel works, so I
 <p>I am by no means an expert, so feel free to reach out to correct anything incorrect or imcomplete!</p>
 <p>I will be focusing on the <a href="https://elixir.bootlin.com/linux/v5.14.14/source">5.14.14</a>, the latest at the time of writing, and on the x86_64 architecture.</p>
 <h2 id="syscalls">Syscalls</h2>
-<p>Learning low level programming, the first time I encountered the kernel was when I learned about the <code>syscall</code> instruction. This instruction, is a blackbox for userland programs, you setup some registers properly, issue the instruction, and magically, your program has been modified according to what the syscall does. But how does it work behind the scene ?</p>
+<p>Learning low level programming, the first time I encountered the kernel was when I learned about the <code>syscall</code> instruction. This instruction, is a blackbox for userland programs, you setup some registers properly, issue the instruction, and magically, your program has been modified accordingly to what the syscall does. But how does it work behind the scene ?</p>
 <p>In this post, we will see how the syscalls are effectued from userland and back. In the x86_64 architecture, there are two ways to issue sycalls, using the <code>syscall</code> instruction, as well as the using the compatibility <code>int 0x80</code>, that allows 32-bits program compatibility. There are differences between the two, some for now I will focus on the former, and might add an article for the latter one day :)</p>
 <h2 id="the-instruction">The instruction</h2>
 <p>The first step is to see what the instruction actually does, and for this, we will have to look inside the Intel manual.</p>
@@ -112,7 +112,8 @@ MSR (after saving the address of the instruction following SYSCALL into RCX)</p>
 <p>We also learn that the address at which we should return once the syscall is done is saved in <code>RCX</code>, which means that this register is not saved ! (This also explains the value that you can find in the <code>RCX</code> register after a syscall, if you&rsquo;ve ever wondered), same goes for the <code>RFLAGS</code>, which overwrites the <code>R11</code> register.</p>
 <p>So, where is this <code>LSTAR</code> register set ? This is done during the booting process, in <a href="https://elixir.bootlin.com/linux/v5.14.14/source/arch/x86/kernel/cpu/common.c#L1753"><code>arch/x86/kernel/cpu/common.c</code></a>, the relevant line is :</p>
 <div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C">wrmsrl(MSR_LSTAR, (<span style="color:#2b91af">unsigned</span> <span style="color:#2b91af">long</span>)entry_SYSCALL_64);
-</code></pre></div><h2 id="the-entrypoint">The entrypoint</h2>
+</code></pre></div><p>The <code>wrmsrl</code> is a function that ends up using the <code>WRMSR</code> instruction to write to a model specific register.</p>
+<h2 id="the-entrypoint">The entrypoint</h2>
 <p>So the once the syscall instruction is issued, we end up at the <code>entry_SYSCALL_64</code> symbol. This symbol is defined in the <a href="https://elixir.bootlin.com/linux/v5.14.14/source/arch/x86/entry/entry_64.S#L87"><code>arch/x86/entry/entry_64.S</code></a></p>
 <p>This is an assembly file, let&rsquo;s take it step by step:</p>
 <pre tabindex="0"><code class="language-x86asm" data-lang="x86asm">swapgs
