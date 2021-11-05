@@ -2,27 +2,27 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Posts on Slowerzs&#39; blog</title>
-    <link>https://slowerzs.github.io/posts/</link>
+    <link>https://blog.slowerzs.net/posts/</link>
     <description>Recent content in Posts on Slowerzs&#39; blog</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
-    <lastBuildDate>Tue, 26 Oct 2021 15:47:48 +0200</lastBuildDate><atom:link href="https://slowerzs.github.io/posts/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Tue, 26 Oct 2021 15:47:48 +0200</lastBuildDate><atom:link href="https://blog.slowerzs.net/posts/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Linux Kernel - Syscalls</title>
-      <link>https://slowerzs.github.io/posts/linux-kernel-syscalls/</link>
+      <link>https://blog.slowerzs.net/posts/linux-kernel-syscalls/</link>
       <pubDate>Tue, 26 Oct 2021 15:47:48 +0200</pubDate>
       
-      <guid>https://slowerzs.github.io/posts/linux-kernel-syscalls/</guid>
+      <guid>https://blog.slowerzs.net/posts/linux-kernel-syscalls/</guid>
       <description>I am writing this series of articles to explain, and learn along the way, how the Linux kernel works (some parts of it at least). I find it difficult to find a place to start to learn how the kernel works, so I will be taking apart different functionnalities, in order to gain insight on how it works :D
 I am by no means an expert, so feel free to reach out to correct anything incorrect or imcomplete!</description>
     </item>
     
     <item>
       <title>THCon 2021 - Inception</title>
-      <link>https://slowerzs.github.io/posts/thcon-2021-inception/</link>
+      <link>https://blog.slowerzs.net/posts/thcon-2021-inception/</link>
       <pubDate>Tue, 15 Jun 2021 15:11:48 +0200</pubDate>
       
-      <guid>https://slowerzs.github.io/posts/thcon-2021-inception/</guid>
+      <guid>https://blog.slowerzs.net/posts/thcon-2021-inception/</guid>
       <description>Inception Inception was a binary exploitation challenge, created by Voydstack. It was a heap challenge, involving Seccomp.
 Discovery We are given the binary, the libc, as well as the path to the flag, /home/user/flag.txt. The version of the libc is 2.27.
 Playing with the binary, it looks like a typical heap exploitation challenge : we can create dreams of any size lesser than 0x800 bytes, edit dreams, show their content, as well as delete them.</description>
@@ -30,10 +30,10 @@ Playing with the binary, it looks like a typical heap exploitation challenge : w
     
     <item>
       <title>FCSC 2021 - ShuffleMe</title>
-      <link>https://slowerzs.github.io/posts/fcsc-2021-shuffleme/</link>
+      <link>https://blog.slowerzs.net/posts/fcsc-2021-shuffleme/</link>
       <pubDate>Mon, 03 May 2021 02:54:53 +0200</pubDate>
       
-      <guid>https://slowerzs.github.io/posts/fcsc-2021-shuffleme/</guid>
+      <guid>https://blog.slowerzs.net/posts/fcsc-2021-shuffleme/</guid>
       <description>ShuffleMe This challenge was part of the Reverse category, and was worth 200 points.
  Retrouvez les entrées permettant de valider.
  Discovery First, we identify what type of binary this :
@@ -43,10 +43,10 @@ $ ./shuffleMe Usage: ./shuffleMe &amp;lt;secret&amp;gt; $ .</description>
     
     <item>
       <title>FCSC 2021 - Reporter</title>
-      <link>https://slowerzs.github.io/posts/fcsc-2021-reporter/</link>
+      <link>https://blog.slowerzs.net/posts/fcsc-2021-reporter/</link>
       <pubDate>Sun, 02 May 2021 22:13:55 +0200</pubDate>
       
-      <guid>https://slowerzs.github.io/posts/fcsc-2021-reporter/</guid>
+      <guid>https://blog.slowerzs.net/posts/fcsc-2021-reporter/</guid>
       <description>Reporter This challenge was part of the Pwn category, and was worth 500 points.
  Vous arrivez dans une nouvelle entreprise qui utilise un navigateur conçu en interne. Pouvez-vous obtenir un shell sur la machine de la personne qui vérifie les liens qu&amp;rsquo;on lui envoie ?
   http://challenges2.france-cybersecurity-challenge.fr:4009/
@@ -55,10 +55,10 @@ $ ./shuffleMe Usage: ./shuffleMe &amp;lt;secret&amp;gt; $ .</description>
     
     <item>
       <title>FCSC 2021 - Blind Date</title>
-      <link>https://slowerzs.github.io/posts/fcsc-2021-blind-date/</link>
+      <link>https://blog.slowerzs.net/posts/fcsc-2021-blind-date/</link>
       <pubDate>Sun, 02 May 2021 21:43:51 +0200</pubDate>
       
-      <guid>https://slowerzs.github.io/posts/fcsc-2021-blind-date/</guid>
+      <guid>https://blog.slowerzs.net/posts/fcsc-2021-blind-date/</guid>
       <description>Blind Date This challenge was part of the Pwn category, and was worth 500 points. Given the challenge name, and the fact that no binary is given, we expect this challenge to be some sort of blind rop challenge. The description of the challenge just gives us a hostname and a port
  Une société souhaite créer un service en ligne protégeant les informations de ses clients. Pouvez-vous leur montrer qu&amp;rsquo;elle n&amp;rsquo;est pas sûre en lisant le fichier flag.</description>
     </item>

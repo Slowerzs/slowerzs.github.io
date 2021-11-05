@@ -12,22 +12,22 @@
     <meta property="og:site_name" content="Slowerzs&#39; blog" />
     <meta property="og:locale" content="en_US" />
     <meta property="og:type" content="article" />
-    <meta property="og:url" content="https://slowerzs.github.io/posts/fcsc-2021-reporter/" />
+    <meta property="og:url" content="https://blog.slowerzs.net/posts/fcsc-2021-reporter/" />
     <meta property="og:title" content="FCSC 2021 - Reporter" />
-    <meta property="og:image" content="https://slowerzs.github.io/" />
+    <meta property="og:image" content="https://blog.slowerzs.net/" />
     <meta property="og:description" content="" />
 
     <meta name="twitter:card" content="summary_large_image" />
     
     <meta name="twitter:title" content="FCSC 2021 - Reporter" />
     <meta name="twitter:description" content="" />
-    <meta name="twitter:image" content="https://slowerzs.github.io/" />
+    <meta name="twitter:image" content="https://blog.slowerzs.net/" />
 
-    <link rel="canonical" href="https://slowerzs.github.io/posts/fcsc-2021-reporter/">
+    <link rel="canonical" href="https://blog.slowerzs.net/posts/fcsc-2021-reporter/">
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha512-MoRNloxbStBcD8z3M/2BmnT+rg4IsMxPkXaGh2zD6LGNNFE80W3onsAhRcMAMrSoyWL9xD7Ert0men7vR8LUZg==" crossorigin="anonymous" />
 
-    <link rel="stylesheet" href="https://slowerzs.github.io/css/custom.css" />
+    <link rel="stylesheet" href="https://blog.slowerzs.net/css/custom.css" />
 
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.2.0/styles/github-gist.min.css" integrity="sha512-od7JLoOTxM8w/HSKGzP9Kexc20K9p/M2zxSWsd7H1e4Ctf+8SQFtCWEZnW5u6ul5ehSECa5QmOk9ju2nQMmlVA==" crossorigin="anonymous" />
@@ -36,10 +36,10 @@
     
 
     <link rel="shortcut icon"
-        href="https://slowerzs.github.io/images/favicon.png?">
+        href="https://blog.slowerzs.net/images/favicon.png?">
 
     
-    <link href="https://slowerzs.github.io/index.xml" rel="alternate" type="application/rss+xml" title="Slowerzs&#39; blog" />
+    <link href="https://blog.slowerzs.net/index.xml" rel="alternate" type="application/rss+xml" title="Slowerzs&#39; blog" />
     
 </head>
 
@@ -49,7 +49,7 @@
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-auto">
-                <a href="https://slowerzs.github.io/">
+                <a href="https://blog.slowerzs.net/">
                     <h1 class="name">Slowerzs&#39; blog</h1>
                 </a>
             </div>
@@ -59,14 +59,14 @@
             <ul class="nav nav-primary">
                 
                 <li class="nav-item">
-                    <a class="nav-link" href="https://slowerzs.github.io/">
+                    <a class="nav-link" href="https://blog.slowerzs.net/">
                         
                         Home
                     </a>
                 </li>
                 
                 <li class="nav-item">
-                    <a class="nav-link" href="https://slowerzs.github.io/about/">
+                    <a class="nav-link" href="https://blog.slowerzs.net/about/">
                         
                         About
                     </a>
@@ -104,19 +104,19 @@
 <p>We start checking checking out the provided binary. There is no source provided, so I do not expect this to be a modern browser such as Chromium based or similar, but more something custom-made.</p>
 <p>Let&rsquo;s open up the browser and see what it is !</p>
 <div class="figure">
-<p><img src="https://slowerzs.github.io/images/browser.png" alt="Browser landing page"></p>
+<p><img src="https://blog.slowerzs.net/images/browser.png" alt="Browser landing page"></p>
 </div>
 <p>By playing with it, it behaves like any web browser, we can use the url bar to visit any website.
 To get an idea of what technologies are used in this browser, I open it up in a decompiler and look for interesting classes. I will use Ghidra.</p>
 <div class="figure">
-<p><img src="https://slowerzs.github.io/images/classes.png" alt="List of classes"></p>
+<p><img src="https://blog.slowerzs.net/images/classes.png" alt="List of classes"></p>
 </div>
 <p>There are many classes used, but we can easily figure out that this browser uses <code>WebKitWebView</code>, a technology that relies on the GTK graphical library.</p>
 <h2 id="searching-for-vulnerabilities">Searching for vulnerabilities</h2>
 <p>There are many functions defined throughout the program, so we need a starting point. Going back to the browser, I noticed two things : one, the title of a tab is a reflection of the content defined in <code>&lt;title&gt;</code> in the html of the page (&ldquo;Agence nationnale&rdquo; in the example above), and second, the title of the window is updated any time we visit a different url. I decided to start by checking out the implementation of these to functionnalities - as good a place to start as any.</p>
 <p>Going back to Ghidra, I found out that the class <code>Browser</code> implements most of the functionnality of the browser. There is one related function, <code>addBrowser</code>.</p>
 <div class="figure">
-<p><img src="https://slowerzs.github.io/images/ghidra.png" alt="Ghidra view"></p>
+<p><img src="https://blog.slowerzs.net/images/ghidra.png" alt="Ghidra view"></p>
 </div>
 <p>Checking out cross-references, I found that <code>addBrowser</code> is called by a function called <code>webview_title_change</code>. That seems promising.</p>
 <p>The decompilation is not perfect, but by looking at the assembly we quickly figure out what this function does : it allocates a stack buffer of size 0x80, zeroes it out, calculates the length of a global variable <code>app_name</code>, adds it to the stack buffer, concatenates the string <code>-</code> to the stack buffer, and finally concatenates the string passed as an argument. Given that this function is called by <code>webview_title_change</code>, I hypothesize this argument is the title.</p>
