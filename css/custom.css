@@ -8,13 +8,6 @@ body {
 
 /* Fix jumping scrollbar when switching to long pages */
 
-.centered {
-    width: 100%;
-/*    margin-left: 20%;
-    transform: translateX(-20%);*/
-    padding-bottom: 1rem;
-    padding-top: 1rem;
-}
 
 html {
     margin-left: calc(100vw - 100%);
@@ -128,10 +121,6 @@ img[src$='#floatright']
     line-height: 1.75rem;
 }
 
-.content .markdown li {
-    margin-top: 1rem;
-    margin-bottom: 1rem;
-}
 
 .content twitterwidget {
     margin: auto;
@@ -146,7 +135,6 @@ img[src$='#floatright']
 
 .content .blog-post-title {
     font-size: 2rem;
-    align-text: center;
     padding-left: auto;
     padding-right: auto;
     line-height: 2.625rem;
@@ -158,6 +146,11 @@ img[src$='#floatright']
 }
 
 /* centered, boxed blog post images */
+.centered {
+    display: flex;
+    margin-left: auto;
+    margin-right: auto;
+}
 
 .content .figure img {
     display: block;
@@ -166,6 +159,111 @@ img[src$='#floatright']
     padding-bottom: 1rem;
     max-width: 100%;
 }
+
+.content .figure img:hover {
+    opacity: 0.7;
+}
+
+/* The Modal (background) */
+.modal {
+  display: none; /* Hidden by default */
+  position: fixed; /* Stay in place */
+  z-index: 1; /* Sit on top */
+  left: 0;
+  top: 0;
+  width: 100%; /* Full width */
+  height: 100%; /* Full height */
+  overflow: auto; /* Enable scroll if needed */
+  background-color: rgb(0,0,0); /* Fallback color */
+  background-color: rgba(0,0,0,0.8); /* Black w/ opacity */
+
+}
+
+table {
+    text-indent: 0;
+    margin-bottom: 1.75em;
+
+    margin-left: auto;
+    margin-right: auto;
+
+    border-collapse: separate;
+    border-spacing: 0px;
+    border-style: solid !important;
+    border-color: #ddd !important;
+    border-radius: 6px;
+    border: 1px;
+
+    width: 92%;
+}
+
+.disable-scroll {
+    height: 100%;
+    overflow-y: hidden;
+}
+
+.overflow-table {
+    overflow: hidden;
+    overflow-x: auto;
+    clear: both;
+    align-items: center;
+    display: flex;
+}
+
+thead {
+    text-align: center;
+    border-bottom: 1px;
+    border-bottom-color: #ddd ;
+    padding-right: auto;
+    padding-left: auto;
+}
+
+th, td {
+    text-align: center;
+    white-space: nowrap;
+    width: auto;
+    border: none;
+}
+
+tbody tr:nth-of-type(odd) {
+  background-color: #eee;
+}
+th:first-child, td:first-child {
+    padding-left: 0.75em;
+}
+th:last-child, td:last-child {
+    padding-right: 0.75em;
+}
+
+/* Add Animation */
+.modal-content {  
+
+  margin: auto;
+  display: block;
+  width: 100%;
+  opacity: 1 !important;
+  max-width: 80%;
+  max-height: 98%;
+
+  -webkit-animation-name: zoom;
+  -webkit-animation-duration: 0.4s;
+  animation-name: zoom;
+  animation-duration: 0.4s;
+
+  position: relative;
+
+}
+
+@-webkit-keyframes zoom {
+  from {-webkit-atransform:scale(0)} 
+  to {-webkit-transform:scale(1)}
+}
+
+@keyframes zoom {
+  from {transform:scale(0)} 
+  to {transform:scale(1)}
+}
+
+/**/
 
 .content .markdown code, .content .markdown pre {
     font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
@@ -259,14 +357,6 @@ img[src$='#floatright']
 .content .navigation .icon {
     width: 16px;
     height: 16px;
-}
-
-/* Partial: Utterances Comments */
-
-.comments {
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
-    max-width: 100%;
 }
 
 /* < medium screens */

@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title> Linux Kernel - Syscalls - Slowerzs&#39; blog </title>
+    <meta name="HandheldFriendly" content="True">
+    <meta name="MobileOptimized" content="320">
+    <meta name="referrer" content="no-referrer">
+    <meta name="description" content="" />
+    <meta property="og:site_name" content="Slowerzs&#39; blog" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://blog.slowerzs.net/posts/linux-kernel-syscalls/" />
+    <meta property="og:title" content="Linux Kernel - Syscalls" />
+    <meta property="og:image" content="https://blog.slowerzs.net/images/small-favicon.png" />
+    <meta property="og:description" content="" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    
+    <meta name="twitter:title" content="Linux Kernel - Syscalls" />
+    <meta name="twitter:description" content="" />
+    <meta name="twitter:image" content="https://blog.slowerzs.net/images/small-favicon.png" />
+
+    <link rel="canonical" href="https://blog.slowerzs.net/posts/linux-kernel-syscalls/">
+
+    <link rel="stylesheet" href="https://blog.slowerzs.net/css/bootstrap.min.css" />
+
+    <link rel="stylesheet" href="https://blog.slowerzs.net/css/custom.css" />
+
+    
+    <link rel="stylesheet" href="https://blog.slowerzs.net/css/stackoverflow-light.min.css">
+    
+
+    <link rel="shortcut icon"
+        href="https://blog.slowerzs.net/images/favicon.png?">
+
+</head>
+
+<body>
+    
+    <div class="mt-xl header">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-auto">
+                <a href="https://blog.slowerzs.net/">
+                    <h1 class="name">Slowerzs&#39; blog</h1>
+                </a>
+            </div>
+        </div>
+
+        <div class="row justify-content-center">
+            <ul class="nav nav-primary">
+                
+                <li class="nav-item">
+                    <a class="nav-link" href="https://blog.slowerzs.net/">
+                        
+                        Home
+                    </a>
+                </li>
+                
+                <li class="nav-item">
+                    <a class="nav-link" href="https://github.com/Slowerzs">
+                        
+                        Github
+                    </a>
+                </li>
+                
+                <li class="nav-item">
+                    <a class="nav-link" href="https://twitter.com/slowerzs">
+                        
+                        Twitter
+                    </a>
+                </li>
+                
+            </ul>
+        </div>
+    </div>
+</div>
+
+    <div class="content">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-sm-12 col-lg-8">
+                    <h1 class="mx-0 mx-md-4">Linux Kernel - Syscalls</h1>
+                    <div class="markdown">
+                        
+    <p>I am writing this series of articles to explain, and learn along the way, how the Linux kernel works (some parts of it at least).
+I find it difficult to find a place to start to learn how the kernel works, so I will be taking apart different functionnalities, in order to gain insight on how it works :D</p>
+<p>I am by no means an expert, so feel free to reach out to correct anything incorrect or imcomplete!</p>
+<p>I will be focusing on the <a href="https://elixir.bootlin.com/linux/v5.14.14/source">5.14.14</a>, the latest at the time of writing, and on the x86_64 architecture.</p>
+<h2 id="syscalls">Syscalls</h2>
+<p>Learning low level programming, the first time I encountered the kernel was when I learned about the <code>syscall</code> instruction. This instruction, is a blackbox for userland programs, you setup some registers properly, issue the instruction, and magically, your program has been modified accordingly to what the syscall does. But how does it work behind the scenes ?</p>
+<p>In this post, we will see how the syscalls are performed from userland and back. In the x86_64 architecture, there are two ways to issue sycalls, using the <code>syscall</code> instruction, as well as the using the compatibility <code>int 0x80</code>, that allows 32-bits program compatibility. There are differences between the two,  for now I will focus on the former, and might add an article for the latter one day :)</p>
+<h2 id="the-instruction">The instruction</h2>
+<p>The first step is to see what the instruction actually does, and for this, we will have to look inside the Intel manual.</p>
+<p>Let&rsquo;s take it step by step :</p>
+<blockquote>
+<p>SYSCALL invokes an OS system-call handler at privilege level 0. It does so by loading RIP from the IA32_LSTAR
+MSR (after saving the address of the instruction following SYSCALL into RCX)</p>
+</blockquote>
+<blockquote>
+<p>SYSCALL also saves RFLAGS into R11 and then masks RFLAGS using the IA32_FMASK MSR</p>
+</blockquote>
+<p>What we can learn from this is that there is a Model Specific Register (MSR) named IA32_LSTAR, that should contain the address of our system-call handler. We will see what value it contains just after.</p>
+<p>We also learn that the address at which we should return once the syscall is done is saved in <code>RCX</code>, which means that this register is not saved ! (This also explains the value that you can find in the <code>RCX</code> register after a syscall, if you&rsquo;ve ever wondered), same goes for the <code>RFLAGS</code>, which overwrites the <code>R11</code> register.</p>
+<p>So, where is this <code>LSTAR</code> register set ? This is done during the booting process, in <a href="https://elixir.bootlin.com/linux/v5.14.14/source/arch/x86/kernel/cpu/common.c#L1753"><code>arch/x86/kernel/cpu/common.c</code></a>, the relevant line is :</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C" data-lang="C"><span style="display:flex;"><span>wrmsrl(MSR_LSTAR, (<span style="color:#2b91af">unsigned</span> <span style="color:#2b91af">long</span>)entry_SYSCALL_64);
+</span></span></code></pre></div><p>The <code>wrmsrl</code> is a function that ends up using the <code>WRMSR</code> instruction to write to a model specific register.</p>
+<h2 id="the-entrypoint">The entrypoint</h2>
+<p>Once the syscall instruction is issued, we end up at the <code>entry_SYSCALL_64</code> symbol. This symbol is defined in the <a href="https://elixir.bootlin.com/linux/v5.14.14/source/arch/x86/entry/entry_64.S#L87"><code>arch/x86/entry/entry_64.S</code></a> file.</p>
+<p>This is an assembly file, let&rsquo;s take it step by step:</p>
+<pre tabindex="0"><code class="language-x86asm" data-lang="x86asm">swapgs
+/* tss.sp2 is scratch space. */
+movq	%rsp, PER_CPU_VAR(cpu_tss_rw + TSS_sp2)
+SWITCH_TO_KERNEL_CR3 scratch_reg=%rsp
+movq	PER_CPU_VAR(cpu_current_top_of_stack), %rsp
+</code></pre><h3 id="getting-a-proper-stack-pointer">Getting a proper stack pointer</h3>
+<p>The first thing we want to do is save the user-supplied registers, which are to be preserved. For this, the simplest idea would be to push them on a kernel stack, however, we don&rsquo;t have a kernel stack pointer, and no real way to get it easily.
+This is where the <code>swapgs</code> comes into play : it exchanges the the <code>gs</code> base register from userland with the kernel one, which, on Linux, is a way to access per-CPU storage. On each CPU, there is a section named <code>.data..percpu</code>, which is used to store per-CPU data. More informations about it can be found <a href="https://0xax.gitbooks.io/linux-insides/content/Concepts/linux-cpu-1.html">here</a> .</p>
+<p>Inside this this <code>.data..percpu</code>, we have the TSS, or Task State Segment, more information can be found on <a href="https://en.wikipedia.org/wiki/Task_state_segment">Wikipedia</a>, but basically, it is used to store the state of the registers of the CPU. Notably, we have the <code>sp0</code>, <code>sp1</code> and <code>sp2</code>. These are used to store stack pointer for each privilege level (rings). Since the second ring is unused, the <code>TSS_sp2</code> is unused, so it can be used for saving <code>RSP</code>.</p>
+<p>Firstly, it saves the userland <code>RSP</code> into <code>PER_CPU_VAR(cpu_tss_rw + TSS_sp2)</code>, and <code>PER_CPU_VAR</code> is a macro aliasing to <code>GS</code>, so we end up storing it into <code>[GS:cpu_tss_rw + TSS_sp2]</code>.</p>
+<p>Skipping for now the next line, the following instruction loads into <code>RSP</code> the new kernel stack pointer, which is stored into the per-CPU storage. We have set our proper stack pointer ! The value comes from <code>cpu_current_top_of_stack</code>, which is a macro that accesses the <code>TSS_sp1</code>, where the kernel stack pointer is stored.</p>
+<p><code>SWITCH_TO_KERNEL_CR3</code> is a macro that sets the <code>CR3</code> register, which is used on linux as the Page Global Directory (PGD), which is used for virtual address translation. So why would we need to change it ? I believe this is linked to the Kernel page-table isolation (KPTI) protection, which separates the pages tables for userland and kernelland, to mitigate the Meltdown vulnerability.</p>
+<h3 id="saving-registers">Saving registers</h3>
+<p>Now that the kernels has a stack pointer, we can save the userland context : this comes just after.</p>
+<pre tabindex="0"><code class="language-x86asm" data-lang="x86asm">SYM_INNER_LABEL(entry_SYSCALL_64_safe_stack, SYM_L_GLOBAL)
+
+	/* Construct struct pt_regs on stack */
+	pushq	$__USER_DS				/* pt_regs-&gt;ss */
+	pushq	PER_CPU_VAR(cpu_tss_rw + TSS_sp2)	/* pt_regs-&gt;sp */
+	pushq	%r11					/* pt_regs-&gt;flags */
+	pushq	$__USER_CS				/* pt_regs-&gt;cs */
+	pushq	%rcx					/* pt_regs-&gt;ip */
+SYM_INNER_LABEL(entry_SYSCALL_64_after_hwframe, SYM_L_GLOBAL)
+	pushq	%rax					/* pt_regs-&gt;orig_ax */
+
+    PUSH_AND_CLEAR_REGS rax=$-ENOSYS
+</code></pre><p>It creates at <code>struct pt_regs</code> on the newly created stack, in order to save all the registers, to restore them later on. The userland <code>RSP</code> is pushed from the <code>GS</code> segment where it was stored earlier.
+This struct is basically all the registers in a specific order. <code>PUSH_AND_CLEAR_REGS</code> is a macro that pushes all remaining registers that the <code>syscall</code> has to preserve, and clears them.</p>
+<p>Also note that both the <code>flags</code> and <code>IP</code> registers are pushed from <code>R11</code> and <code>RCX</code> respectively, which makes sense according to what the <code>SYSCALL</code> instruction does.</p>
+<p>In the <code>struct pt_regs</code>, there are two fields for the <code>ax</code> registers, one is used to save the syscall number, one is used for the return value. For now, the return value in the struct is set to <code>-ENOSYS</code>, the value returned when the syscall number does not exists.</p>
+<p>Next, we have the following lines</p>
+<pre tabindex="0"><code class="language-x86asm" data-lang="x86asm">	movq	%rsp, %rdi
+	movslq	%eax, %rsi
+	call	do_syscall_64		
+</code></pre><p>We are setting up the arguments for a call to <code>do_syscall_64</code>, the first argument being a pointer to our new <code>struct pt_regs</code>, the second being the number of the syscall we are trying to call.</p>
+<p>The <code>do_syscall_64</code> is a C function, defined in <a href="https://elixir.bootlin.com/linux/v5.14.14/source/arch/x86/entry/common.c#L73"><code>arch/x86/entry/common.c</code></a>.</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C" data-lang="C"><span style="display:flex;"><span>__visible noinstr <span style="color:#2b91af">void</span> do_syscall_64(<span style="color:#00f">struct</span> pt_regs *regs, <span style="color:#2b91af">int</span> nr)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>	add_random_kstack_offset();
+</span></span><span style="display:flex;"><span>	nr = syscall_enter_from_user_mode(regs, nr);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	instrumentation_begin();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#00f">if</span> (!do_syscall_x64(regs, nr) &amp;&amp; !do_syscall_x32(regs, nr) &amp;&amp; nr != -1) {
+</span></span><span style="display:flex;"><span>		<span style="color:#008000">/* Invalid system call, but still a system call. */</span>
+</span></span><span style="display:flex;"><span>		regs-&gt;ax = __x64_sys_ni_syscall(regs);
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	instrumentation_end();
+</span></span><span style="display:flex;"><span>	syscall_exit_to_user_mode(regs);
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>The first function called, <code>add_random_kstack_offset</code>, is related to <code>KASLR</code> : its goal is to add a random offset to the stack address, and this for each syscall. It uses GCC&rsquo;s <code>__builtin_alloca</code> to add a random constant to the stack pointer, and inline assembly to keep the offset value.</p>
+<p>Next, <code>syscall_enter_from_user_mode</code> is called, which is simply a wrapper for <code>__syscall_enter_from_user_work</code>, defined in <a href="https://elixir.bootlin.com/linux/v5.14.14/source/arch/x86/entry/common.c#L73"><code>kernel/entry/common.c</code></a></p>
+<p>From what I understand, this function is related to syscall tracing, for instance when using seccomp, and simply returns the syscall number when no tracing is taking place, which we will assume here.
+Similarily, <code>instrumentation_begin</code> is called, which is related to instrumentating how syscalls behave, so we will ignore it.</p>
+<p>Afterwards, <code>do_syscall_x64</code> and <code>do_syscall_x32</code> are called, which is where our syscall is dispatched to the correct handler ! Before diving in on how they work, I&rsquo;ll first mention why we might call a 32 bit syscall.</p>
+<p>The reason for that is that even if we issue a <code>SYSCALL</code> instruction in a 64 bits process, we can still access some 32 bits syscalls, exposed for compatibility ! If you didn&rsquo;t know, issuing a syscall with <code>RAX</code> set to <code>0x40000000 + x</code>, you can call these compatibility syscalls (<code>x</code> being the number of the specific syscall your are intersted in) !</p>
+<p>This is also the reason you&rsquo;ll almost always see in all seccomp rules a line at the begginning that looks like <code># A &gt;= 0x40000000 ? dead : next</code>, to ensure we can&rsquo;t escape the filter using this x32 ABI.</p>
+<p>Taking a glimpse at the begin of <code>do_syscall_x32</code>, we can see this :</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C" data-lang="C"><span style="display:flex;"><span><span style="color:#00f">static</span> __always_inline <span style="color:#2b91af">bool</span> do_syscall_x32(<span style="color:#00f">struct</span> pt_regs *regs, <span style="color:#2b91af">int</span> nr)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>	<span style="color:#008000">/*
+</span></span></span><span style="display:flex;"><span><span style="color:#008000">	 * Adjust the starting offset of the table, and convert numbers
+</span></span></span><span style="display:flex;"><span><span style="color:#008000">	 * &lt; __X32_SYSCALL_BIT to very high and thus out of range
+</span></span></span><span style="display:flex;"><span><span style="color:#008000">	 * numbers for comparisons.
+</span></span></span><span style="display:flex;"><span><span style="color:#008000">	 */</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#2b91af">unsigned</span> <span style="color:#2b91af">int</span> xnr = nr - __X32_SYSCALL_BIT
+</span></span></code></pre></div><p>where <code>__X32_SYSCALL_BIT</code> is defined using</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C" data-lang="C"><span style="display:flex;"><span><span style="color:#00f">#define __X32_SYSCALL_BIT	0x40000000
+</span></span></span></code></pre></div><p>Afterwards <code>xrn</code> will be considered as the number of the syscall in the list of compatibility ones.</p>
+<p>But let&rsquo;s focus on <code>do_syscall_x64</code> for now :)</p>
+<h3 id="the-dispatcher">The dispatcher</h3>
+<p>This function, <code>do_syscall_x64</code>, is defined in <a href="https://elixir.bootlin.com/linux/v5.14.14/source/arch/x86/entry/common.c#L40"><code>arch/x86/entry/common.c</code></a></p>
+<p>Its goal is simple :  it has to choose the correct handler, if it exists, and call it, passing the <code>struct pt_regs</code> as an argument. It dispatches to the appropriate handler.</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C" data-lang="C"><span style="display:flex;"><span><span style="color:#00f">static</span> __always_inline <span style="color:#2b91af">bool</span> do_syscall_x64(<span style="color:#00f">struct</span> pt_regs *regs, <span style="color:#2b91af">int</span> nr)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>	<span style="color:#008000">/*
+</span></span></span><span style="display:flex;"><span><span style="color:#008000">	 * Convert negative numbers to very high and thus out of range
+</span></span></span><span style="display:flex;"><span><span style="color:#008000">	 * numbers for comparisons.
+</span></span></span><span style="display:flex;"><span><span style="color:#008000">	 */</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#2b91af">unsigned</span> <span style="color:#2b91af">int</span> unr = nr;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#00f">if</span> (likely(unr &lt; NR_syscalls)) {
+</span></span><span style="display:flex;"><span>		unr = array_index_nospec(unr, NR_syscalls);
+</span></span><span style="display:flex;"><span>		regs-&gt;ax = sys_call_table[unr](regs);
+</span></span><span style="display:flex;"><span>		<span style="color:#00f">return</span> true;
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#00f">return</span> false;
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>First, we check if the syscall number is out of range, comparing the syscall number to <code>NR_syscalls</code>, which is a macro, whose value is the highest number for a syscall, in this version, it is <code>448</code>.</p>
+<p><code>array_index_nospec</code> is a function used to mitigate against speculative attacks, so we will safely assume it returns our syscall number.</p>
+<p>Then, the call to our handler is made ! For this, the array <code>sys_call_table</code>, is dereferenced by our syscall number, and the handler is called with our <code>struct pt_regs</code> as an argument. The return value of the handler is stored in our registers structure, and we are ready to start the return to userland !</p>
+<p>But before doing that, we will take a look at how the <code>sys_call_table</code> is constructed. It is located in <a href="https://elixir.bootlin.com/linux/v5.14.14/source/arch/x86/entry/syscall_64.c#L16"><code>arch/x86/entry/syscall_64.c</code></a></p>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C" data-lang="C"><span style="display:flex;"><span>asmlinkage <span style="color:#00f">const</span> <span style="color:#2b91af">sys_call_ptr_t</span> sys_call_table[] = {
+</span></span><span style="display:flex;"><span><span style="color:#00f">#include</span> <span style="color:#00f">&lt;asm/syscalls_64.h&gt;</span><span style="color:#00f">
+</span></span></span><span style="display:flex;"><span><span style="color:#00f"></span>};
+</span></span></code></pre></div><p>So actually, this is not really defined here. But if we look for the file <code>syscalls_64.h</code> in the source code, we can&rsquo;t find it ! The reason for this is because this header file is dynamically generated, using the <a href="https://elixir.bootlin.com/linux/v5.14.14/source/scripts/syscalltbl.sh"><code>script/syscalltbl.sh</code></a> script.</p>
+<p>This script is used to parse the file <a href="https://elixir.bootlin.com/linux/v5.14.14/source/arch/x86/entry/syscalls/syscall_64.tbl"><code>arch/x86/entry/syscalls/syscall_64.tbl</code></a>, which contains the list of our syscalls.</p>
+<p>Looking at the start, we can see the usual suspects.</p>
+<pre tabindex="0"><code>0	common	read			sys_read
+1	common	write			sys_write
+2	common	open			sys_open
+...
+13	64	rt_sigaction		sys_rt_sigaction
+...
+
+512	x32	rt_sigaction		compat_sys_rt_sigaction
+513	x32	rt_sigreturn		compat_sys_x32_rt_sigreturn
+514	x32	ioctl			compat_sys_ioctl
+...
+</code></pre><p>The second column specifies which ABI it is part of. The <code>syscalls_64.h</code> header is built using the syscalls classified as either <code>common</code> or <code>64</code>.</p>
+<p>The list also references the symbols of the handlers, for instance, for the syscall <code>read</code>, the handler in the array that we&rsquo;ll end up calling is going to be <code>sys_read</code>.</p>
+<p>For the <code>do_syscall_x32</code> function, the process is exactly the same, after substracting <code>__X32_SYSCALL_BIT</code>. The only difference is that we are using another array, <code>x32_sys_call_table</code>, which is built from <code>asm/syscalls_x32.h</code>, which is also dynamically generated using <code>script/syscalltbl.sh</code>, which parses again <code>syscall_64.tbl</code> (yes, this is not a typo), and extract syscalls classified as either <code>common</code> or <code>x32</code>. They are often prefixed with <code>compat_</code>.</p>
+<h3 id="back-to-userland">Back to userland</h3>
+<p>Once the handler returns, we go back to <code>do_syscall_x64</code>, we set the <code>ax</code> register stored on the stack, to the return value of our handler, and return <code>true</code>.</p>
+<p>Next, we go back to <code>do_syscall_64</code>, and since we just returned <code>true</code>, we call <code>instrumentation_end</code>, related to the aformentionned <code>instrumentation_begin</code> and go to <code>syscall_exit_to_user_mode</code>.</p>
+<p>Finally, once that is done, the code returns to <code>entry_SYSCALL_64</code>, and there, there are several path to return to userland. This is because there are multiple ways to get to this point in <code>entry_SYSCALL_64</code>. Let&rsquo;s see the relevant assembly.</p>
+<pre tabindex="0"><code class="language-x86asm" data-lang="x86asm">	movq	RCX(%rsp), %rcx
+	movq	RIP(%rsp), %r11
+
+	cmpq	%rcx, %r11	/* SYSRET requires RCX == RIP */
+	jne	swapgs_restore_regs_and_return_to_usermode
+</code></pre><p>Remembering that our saved registers are stored on the kernel stack, we restore the values of <code>RCX</code> and <code>RIP</code> (into <code>R11</code> - here <code>RCX</code> and <code>RIP</code> are macros that contains the offset of these registers in a <code>struct pt_regs</code>).</p>
+<p>Remembering what we did <a href="#saving-registers">here</a>, since we arrived in <code>entry_SYSCALL_64</code> using a <code>SYSCALL</code> instruction, the <code>RCX</code> contained the saved value for <code>RIP</code>, thus here they are equal.</p>
+<p>Next, we have :</p>
+<pre tabindex="0"><code class="language-x86asm" data-lang="x86asm">#ifdef CONFIG_X86_5LEVEL
+	ALTERNATIVE &#34;shl $(64 - 48), %rcx; sar $(64 - 48), %rcx&#34;, \
+		&#34;shl $(64 - 57), %rcx; sar $(64 - 57), %rcx&#34;, X86_FEATURE_LA57
+#else
+	shl	$(64 - (__VIRTUAL_MASK_SHIFT+1)), %rcx
+	sar	$(64 - (__VIRTUAL_MASK_SHIFT+1)), %rcx
+#endif
+</code></pre><p>This is a sanity check to ensure that the provided return value in <code>RCX</code> is canonical, which means it is a proper userland adress. To do so, the code clears out either the <code>16</code> or <code>7</code> top bits of the <code>RCX</code>, and compare it with the previous value of the register, if they are different, the adress is not canonical, otherwise it is.</p>
+<p>(<code>__VIRTUAL_MASK_SHIFT</code> is a macro whose value depends on whether the kernel uses 4 or 5 page tables)</p>
+<pre tabindex="0"><code class="language-x86asm" data-lang="x86asm">	cmpq	%rcx, %r11
+	jne	swapgs_restore_regs_and_return_to_usermode
+</code></pre><p>Why two possible values ? This depends on whether the kernel uses a 4 or 5 level page table, more information on the virtual memory layout can be found in <a href="https://elixir.bootlin.com/linux/v5.14.14/source/Documentation/x86/x86_64/mm.rst"><code>Documentation/x86/x86_64/mm.rst</code></a></p>
+<p>Similarily, we have 4 more sanity checks :</p>
+<pre tabindex="0"><code class="language-x86asm" data-lang="x86asm">	cmpq	$__USER_CS, CS(%rsp)		/* CS must match SYSRET */
+	jne	swapgs_restore_regs_and_return_to_usermode
+
+	movq	R11(%rsp), %r11
+	cmpq	%r11, EFLAGS(%rsp)		/* R11 == RFLAGS */
+	jne	swapgs_restore_regs_and_return_to_usermode
+
+	testq	$(X86_EFLAGS_RF|X86_EFLAGS_TF), %r11
+	jnz	swapgs_restore_regs_and_return_to_usermode
+
+	/* nothing to check for RSP */
+
+	cmpq	$__USER_DS, SS(%rsp)		/* SS must match SYSRET */
+	jne	swapgs_restore_regs_and_return_to_usermode
+</code></pre><p>Just like we ensured <code>RCX</code> had a proper value, we check that the registers (or flags) that the kernel must preserve are correct, if they are not, we go to <code>swapgs_restore_regs_and_return_to_usermode</code>. The reason why the sanity checks are performed is to avoid going to this function, which is much slower that using <code>SYSRET</code> like we are going to.</p>
+<p>Assuming we are in a normal situation, all those checks should succeed.</p>
+<p>If so, we proceed to restore all remaining registers that are saved on the stack</p>
+<pre tabindex="0"><code class="language-x86asm" data-lang="x86asm">syscall_return_via_sysret:
+	/* rcx and r11 are already restored (see code above) */
+	POP_REGS pop_rdi=0 skip_r11rcx=1
+
+	/*
+	 * Now all regs are restored except RSP and RDI.
+	 * Save old stack pointer and switch to trampoline stack.
+	 */
+	movq	%rsp, %rdi
+	movq	PER_CPU_VAR(cpu_tss_rw + TSS_sp0), %rsp
+	UNWIND_HINT_EMPTY
+
+	pushq	RSP-RDI(%rdi)	/* RSP */
+	pushq	(%rdi)		/* RDI */
+</code></pre><p>First, we restore all remaining registers, using the <code>POP_REGS</code> macro, which undoes what <code>PUSH_AND_CLEAR_REGS</code> did when entering, except for <code>RDI</code> and the registers we have already restored.</p>
+<p>Next, we save <code>RSP</code> into <code>RDI</code>; at the time of doing so, it points to the saved <code>RDI</code> register.</p>
+<p>Afterwards, we save the values of the <code>RDI</code> and <code>RSP</code> to the TSS. For this, we load <code>RSP</code> using the per-CPU mechanism we saw earlier. This information is useful for the next time that the current thread switches to kernel mode.</p>
+<p>Remember that <code>RDI</code> points to the saved <code>RDI</code>, so we find the offset of <code>RSP</code> by calculating <code>RSP - RDI</code> on the stack, and we store them by pushing, to the <code>RSP</code> that was previously loaded.</p>
+<p>At last, we have this code :</p>
+<pre tabindex="0"><code class="language-x86asm" data-lang="x86asm">	STACKLEAK_ERASE_NOCLOBBER
+
+	SWITCH_TO_USER_CR3_STACK scratch_reg=%rdi
+
+	popq	%rdi
+	popq	%rsp
+	swapgs
+	sysretq
+</code></pre><p><code>STACKLEAK_ERASE_NOCLOBBER</code> is a macro that clears out the stack to avoid memory leaks, and we restore the userland page table using <code>SWITCH_TO_USER_CR3_STACK</code>.</p>
+<p>Finally, we restore the userland <code>RDI</code> and <code>RSP</code> register, change the <code>gs</code> base register again with <code>SWAPGS</code>, and issue a <code>SYSRETQ</code> which does the opposite of <code>SYSCALL</code> !</p>
+<p>According to the documentation from the manual, the <code>SYSRET</code> does the following :</p>
+<blockquote>
+<p>SYSRET is a companion instruction to the SYSCALL instruction. It returns from an OS system-call handler to user
+code at privilege level 3. It does so by loading RIP from RCX and loading RFLAGS from R11.</p>
+</blockquote>
+<p>After that, we are back to our userland program ! This also explains why after a <code>SYSCALL</code>, we will find that the <code>RCX</code> register contains the address of the instruction that follows the <code>SYSCALL</code> (and <code>R11</code> contains the <code>RFLAGS</code>)</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>That was a nice learning experience to see what happens behind the <code>SYSCALL</code> instruction, which is meant to be a blackbox from the userland perspective, however there are other way to issue &ldquo;system calls&rdquo;, notably using the <code>int 0x80</code> instruction (even in 64 bits), and the path that the kernel takes is rather different, since it is an interrupt ! I might add another article another day !</p>
+
+
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+
+
+    
+
+    
+        <script src="https://blog.slowerzs.net/js/highlight.min.js"></script>
+        
+        <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/python.min.js"></script>
+        
+        <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/c.min.js"></script>
+        
+        <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/x86asm.min.js"></script>
+        
+        <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/armasm.min.js"></script>
+        
+        <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/bash.min.js"></script>
+        
+        <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/shell.min.js"></script>
+        
+        <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/csharp.min.js"></script>
+        
+        <script>
+            window.addEventListener('load', function() {
+                hljs.configure({
+                    ignoreUnescapedHTML: true
+                })
+                hljs.highlightAll();
+            }, true);
+        </script>
+    
+
+    <div id="modal" class="modal">
+        <img id="modal-content" class="modal-content">
+    </div>
+    <script>
+
+        if (typeof screen.orientation !== 'undefined') {
+            var modal = document.getElementById('modal');
+
+            modal.addEventListener('click', function(e) {
+              if (e.target === e.currentTarget) {
+                modal.style.display = "none";
+                document.body.style.overflowY = "visible"
+              }
+            });
+            document.addEventListener('keydown', function(e) {
+                if (e.key === "Escape") {
+                    modal.style.display = "none";
+                    document.body.style.overflowY = "visible"
+                }
+            })
+
+            
+            document.addEventListener('click', function (e) { 
+                if (e.target.parentElement.parentElement.className.indexOf('figure') !== -1) {
+                    var img = e.target;
+                    var modalImg = document.getElementById("modal-content");
+                    document.body.style.overflowY = "hidden"
+                    modal.style.display = "flex";
+                    modalImg.src = img.src;
+                    captionText.innerHTML = img.alt;
+                }
+            });
+        }
+        
+
+    </script>
+
+    
+
+</body>
+
+</html>

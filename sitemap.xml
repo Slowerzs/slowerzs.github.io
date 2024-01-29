@@ -2,26 +2,32 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>https://slowerzs.github.io/about/</loc>
-    <lastmod>2021-05-03T22:41:14+02:00</lastmod>
+    <loc>https://blog.slowerzs.net/posts/</loc>
+    <lastmod>2024-01-21T16:26:38+01:00</lastmod>
   </url><url>
-    <loc>https://slowerzs.github.io/posts/fcsc-2021-shuffleme/</loc>
+    <loc>https://blog.slowerzs.net/</loc>
+    <lastmod>2024-01-21T16:26:38+01:00</lastmod>
+  </url><url>
+    <loc>https://blog.slowerzs.net/posts/thievingfox/</loc>
+    <lastmod>2024-01-21T16:26:38+01:00</lastmod>
+  </url><url>
+    <loc>https://blog.slowerzs.net/posts/linux-kernel-syscalls/</loc>
+    <lastmod>2021-10-26T15:47:48+02:00</lastmod>
+  </url><url>
+    <loc>https://blog.slowerzs.net/posts/thcon-2021-inception/</loc>
+    <lastmod>2021-06-15T15:11:48+02:00</lastmod>
+  </url><url>
+    <loc>https://blog.slowerzs.net/posts/fcsc-2021-shuffleme/</loc>
     <lastmod>2021-05-03T02:54:53+02:00</lastmod>
   </url><url>
-    <loc>https://slowerzs.github.io/posts/</loc>
-    <lastmod>2021-05-03T02:54:53+02:00</lastmod>
-  </url><url>
-    <loc>https://slowerzs.github.io/</loc>
-    <lastmod>2021-05-03T02:54:53+02:00</lastmod>
-  </url><url>
-    <loc>https://slowerzs.github.io/posts/fcsc-2021-reporter/</loc>
+    <loc>https://blog.slowerzs.net/posts/fcsc-2021-reporter/</loc>
     <lastmod>2021-05-02T22:13:55+02:00</lastmod>
   </url><url>
-    <loc>https://slowerzs.github.io/posts/fcsc-2021-blind-date/</loc>
+    <loc>https://blog.slowerzs.net/posts/fcsc-2021-blind-date/</loc>
     <lastmod>2021-05-02T21:43:51+02:00</lastmod>
   </url><url>
-    <loc>https://slowerzs.github.io/categories/</loc>
+    <loc>https://blog.slowerzs.net/categories/</loc>
   </url><url>
-    <loc>https://slowerzs.github.io/tags/</loc>
+    <loc>https://blog.slowerzs.net/tags/</loc>
   </url>
 </urlset>

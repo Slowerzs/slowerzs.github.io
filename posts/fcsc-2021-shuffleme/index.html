@@ -12,35 +12,30 @@
     <meta property="og:site_name" content="Slowerzs&#39; blog" />
     <meta property="og:locale" content="en_US" />
     <meta property="og:type" content="article" />
-    <meta property="og:url" content="https://slowerzs.github.io/posts/fcsc-2021-shuffleme/" />
+    <meta property="og:url" content="https://blog.slowerzs.net/posts/fcsc-2021-shuffleme/" />
     <meta property="og:title" content="FCSC 2021 - ShuffleMe" />
-    <meta property="og:image" content="https://slowerzs.github.io/" />
+    <meta property="og:image" content="https://blog.slowerzs.net/images/small-favicon.png" />
     <meta property="og:description" content="" />
 
     <meta name="twitter:card" content="summary_large_image" />
     
     <meta name="twitter:title" content="FCSC 2021 - ShuffleMe" />
     <meta name="twitter:description" content="" />
-    <meta name="twitter:image" content="https://slowerzs.github.io/" />
+    <meta name="twitter:image" content="https://blog.slowerzs.net/images/small-favicon.png" />
 
-    <link rel="canonical" href="https://slowerzs.github.io/posts/fcsc-2021-shuffleme/">
+    <link rel="canonical" href="https://blog.slowerzs.net/posts/fcsc-2021-shuffleme/">
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha512-MoRNloxbStBcD8z3M/2BmnT+rg4IsMxPkXaGh2zD6LGNNFE80W3onsAhRcMAMrSoyWL9xD7Ert0men7vR8LUZg==" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://blog.slowerzs.net/css/bootstrap.min.css" />
 
-    <link rel="stylesheet" href="https://slowerzs.github.io/css/custom.css" />
+    <link rel="stylesheet" href="https://blog.slowerzs.net/css/custom.css" />
 
     
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.2.0/styles/github-gist.min.css" integrity="sha512-od7JLoOTxM8w/HSKGzP9Kexc20K9p/M2zxSWsd7H1e4Ctf+8SQFtCWEZnW5u6ul5ehSECa5QmOk9ju2nQMmlVA==" crossorigin="anonymous" />
-    
-
+    <link rel="stylesheet" href="https://blog.slowerzs.net/css/stackoverflow-light.min.css">
     
 
     <link rel="shortcut icon"
-        href="https://slowerzs.github.io/images/favicon.png">
+        href="https://blog.slowerzs.net/images/favicon.png?">
 
-    
-    <link href="https://slowerzs.github.io/index.xml" rel="alternate" type="application/rss+xml" title="Slowerzs&#39; blog" />
-    
 </head>
 
 <body>
@@ -49,7 +44,7 @@
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-auto">
-                <a href="https://slowerzs.github.io/">
+                <a href="https://blog.slowerzs.net/">
                     <h1 class="name">Slowerzs&#39; blog</h1>
                 </a>
             </div>
@@ -59,23 +54,23 @@
             <ul class="nav nav-primary">
                 
                 <li class="nav-item">
-                    <a class="nav-link" href="https://slowerzs.github.io/">
+                    <a class="nav-link" href="https://blog.slowerzs.net/">
                         
                         Home
                     </a>
                 </li>
                 
                 <li class="nav-item">
-                    <a class="nav-link" href="https://slowerzs.github.io/about/">
+                    <a class="nav-link" href="https://github.com/Slowerzs">
                         
-                        About
+                        Github
                     </a>
                 </li>
                 
                 <li class="nav-item">
-                    <a class="nav-link" href="https://github.com/Slowerzs">
+                    <a class="nav-link" href="https://twitter.com/slowerzs">
                         
-                        GitHub
+                        Twitter
                     </a>
                 </li>
                 
@@ -98,17 +93,17 @@
 </blockquote>
 <h2 id="discovery">Discovery</h2>
 <p>First, we identify what type of binary this :</p>
-<pre><code class="language-raw" data-lang="raw">$ file shuffleMe 
+<pre tabindex="0"><code class="language-raw" data-lang="raw">$ file shuffleMe 
 shuffleMe: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, for GNU/Linux 3.2.0, stripped
 </code></pre><p>This is a 64-bit ELF. It is stripped. Let&rsquo;s try running the binary :</p>
-<pre><code class="language-raw" data-lang="raw">$ ./shuffleMe 
+<pre tabindex="0"><code class="language-raw" data-lang="raw">$ ./shuffleMe 
 Usage: ./shuffleMe &lt;secret&gt;
 $ ./shuffleMe 1
 bobcat
 Nope.
 </code></pre><p>The program expects a secret as a first argument, then waits for input through stdin. Afterwards, it simply says <code>Nope.</code>
 Let&rsquo;s have a look at the assembly of the program - starting with the main function.</p>
-<pre><code>            0x00401172      55             push rbp
+<pre tabindex="0"><code>            0x00401172      55             push rbp
             0x00401173      4889e5         mov rbp, rsp
             0x00401176      4883ec70       sub rsp, 0x70
             0x0040117a      897d9c         mov dword [rbp - 0x64], edi
@@ -118,7 +113,7 @@ Let&rsquo;s have a look at the assembly of the program - starting with the main 
         │   0x00401187      488b4590       mov rax, qword [rbp - 0x70]
         │   0x0040118b      488b10         mov rdx, qword [rax]
         │   0x0040118e      488b05cb4e00.  mov rax, qword [obj.stderr] ; [0x406060:8]=0
-        │   0x00401195      be04404000     mov esi, str.Usage:__s__secret ; 0x404004 ; &quot;Usage: %s &lt;secret&gt;\n&quot;
+        │   0x00401195      be04404000     mov esi, str.Usage:__s__secret ; 0x404004 ; &#34;Usage: %s &lt;secret&gt;\n&#34;
         │   0x0040119a      4889c7         mov rdi, rax
         │   0x0040119d      b800000000     mov eax, 0
         │   0x004011a2      e8a9feffff     call sym.imp.fprintf
@@ -131,13 +126,13 @@ Let&rsquo;s have a look at the assembly of the program - starting with the main 
             0x004011bf      e89cfeffff     call sym.imp.atoi
             0x004011c4      8945fc         mov dword [rbp - 4], eax
             0x004011c7      488d45a0       lea rax, [rbp - 0x60]
-            0x004011cb      ba50000000     mov edx, 0x50               ; 'P' ; 80
+            0x004011cb      ba50000000     mov edx, 0x50               ; &#39;P&#39; ; 80
             0x004011d0      be00000000     mov esi, 0
             0x004011d5      4889c7         mov rdi, rax
             0x004011d8      e863feffff     call sym.imp.memset
             0x004011dd      488d45a0       lea rax, [rbp - 0x60]
             0x004011e1      4889c6         mov rsi, rax
-            0x004011e4      bf18404000     mov edi, str.70s            ; 0x404018 ; &quot;%70s&quot;
+            0x004011e4      bf18404000     mov edi, str.70s            ; 0x404018 ; &#34;%70s&#34;
             0x004011e9      b800000000     mov eax, 0
             0x004011ee      e87dfeffff     call sym.imp.__isoc99_scanf
             0x004011f3      8b55fc         mov edx, dword [rbp - 4]
@@ -148,10 +143,10 @@ Let&rsquo;s have a look at the assembly of the program - starting with the main 
             0x00401205      488945f0       mov qword [rbp - 0x10], rax
             0x00401209      48817df00000.  cmp qword [rbp - 0x10], 0x460000
         ┌─&lt; 0x00401211      750c           jne 0x40121f
-        │   0x00401213      bf1d404000     mov edi, str.Yay            ; 0x40401d ; &quot;Yay!&quot;
+        │   0x00401213      bf1d404000     mov edi, str.Yay            ; 0x40401d ; &#34;Yay!&#34;
         │   0x00401218      e813feffff     call sym.imp.puts
        ┌──&lt; 0x0040121d      eb0a           jmp 0x401229
-       │└─&gt; 0x0040121f      bf22404000     mov edi, str.Nope.          ; 0x404022 ; &quot;Nope.&quot;
+       │└─&gt; 0x0040121f      bf22404000     mov edi, str.Nope.          ; 0x404022 ; &#34;Nope.&#34;
        │    0x00401224      e807feffff     call sym.imp.puts
        └──&gt; 0x00401229      b800000000     mov eax, 0
             0x0040122e      c9             leave
@@ -162,10 +157,10 @@ Afterwards, it zeroes out a stack buffer, and calls <code>scanf(&quot;%70s&quot;
 Finally, it calls a function at <code>0x401230</code>, with our stack buffer and the integer as arguments. If the return value is <code>0x460000</code>, it prints <code>Yay!</code>, otherwise <code>Nope.</code>. So we know the real magic happens in this function, the goal is to get this function to return <code>0x460000</code></p>
 <h2 id="the-main-logic">The main logic</h2>
 <p>Let&rsquo;s have a look at the function at <code>0x401230</code>.</p>
-<pre><code>            0x00401230      4831db         xor rbx, rbx
+<pre tabindex="0"><code class="language-x86asm" data-lang="x86asm">            0x00401230      4831db         xor rbx, rbx
             0x00401233      4d31c9         xor r9, r9
             0x00401236      4d31db         xor r11, r11
-            0x00401239      49c7c4330000.  mov r12, 0x33               ; '3' ; 51
+            0x00401239      49c7c4330000.  mov r12, 0x33               ; &#39;3&#39; ; 51
             0x00401240      e800000000     call 0x401245
             0x00401245      4158           pop r8
             0x00401247      4983c038       add r8, 0x38                ; 56
@@ -213,41 +208,40 @@ Firstly, it clears out <code>rbx</code>, <code>r9</code> and <code>r11</code>,
 <p>Next, it adds <code>0x38</code> to <code>r8</code>, which now contains <code>0x40127d</code>. Note that this is the address of slightly later in the function.</p>
 <p>Afterwards, it saves <code>rax</code> by <code>push</code>&lsquo;ing it, then performs some math of <code>rsi</code>, which is the 2nd argument passed to our function, the argument we passed through <code>argv</code>.
 This is the equivalent python code to the calculations :</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">rsi = ((0xd9 + (0xb5 * rsi)) % 0x200)
-</code></pre></div><p>It restores <code>rax</code>, then adds our calculated <code>rsi &lt;&lt; 4</code> to the previously calculated address in <code>rcx</code>, substracts <code>7</code> to <code>r11</code>, and finally jumps to <code>rcx</code>.
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>rsi = ((0xd9 + (0xb5 * rsi)) % 0x200)
+</span></span></code></pre></div><p>It restores <code>rax</code>, then adds our calculated <code>rsi &lt;&lt; 4</code> to the previously calculated address in <code>rcx</code>, substracts <code>7</code> to <code>r11</code>, and finally jumps to <code>rcx</code>.
 What this does is calculate an address to which it jumps, and the possibles addresses are right after : it jumps to one instruction followed by a number of <code>nop</code>, then jumps back to the top, calculate a new <code>rsi</code> value, jumps somewhere else, etc&hellip; It is some sort of loop, and the our <code>argv</code> is what determines the seed for the loop.
 So how do we figure out the correct value for our <code>argv</code> ?</p>
 <h2 id="finding-the-correct-argument">Finding the correct argument</h2>
 <p>It is not easy to follows the many jumps the program does, so I wrote a python script to print out the first instruction in the loop based, using the <code>capstone</code> library.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#00f">from</span> capstone <span style="color:#00f">import</span> *
-
-base = 0x40127d
-
-
-<span style="color:#00f">with</span> open(<span style="color:#a31515">&#34;shuffleMe&#34;</span>, <span style="color:#a31515">&#34;rb&#34;</span>) <span style="color:#00f">as</span> f:
-        data = f.read()
-
-md = Cs(CS_ARCH_X86, CS_MODE_64)
-
-
-<span style="color:#00f">def</span> print_first_instructions(seed):
-    <span style="color:#00f">for</span> _ <span style="color:#00f">in</span> range(25):
-        <span style="color:#008000">#Let&#39;s print the first 25 instructions</span>
-        seed = ((0xd9 + (0xb5 * seed)) % 0x200)
-        addr = base + (seed&lt;&lt;4)
-        CODE = data[addr - 0x400000 : addr+20 - 0x400000]
-        <span style="color:#008000">#We just want one instruction, but we don&#39;t know how many bytes it is, so we take more and break after the first instruction printed out</span>
-        <span style="color:#00f">for</span> dis <span style="color:#00f">in</span> md.disasm(CODE, addr):
-            <span style="color:#00f">print</span>(<span style="color:#a31515">&#34;0x</span><span style="color:#a31515">%x</span><span style="color:#a31515">:</span><span style="color:#a31515">\t</span><span style="color:#a31515">%s</span><span style="color:#a31515">\t</span><span style="color:#a31515">%s</span><span style="color:#a31515">&#34;</span> %(dis.address, dis.mnemonic, dis.op_str))
-            <span style="color:#00f">break</span>
-
-
-<span style="color:#00f">for</span> i <span style="color:#00f">in</span> range(0x200):
-    <span style="color:#00f">print</span>(f<span style="color:#a31515">&#34;---------{hex(i)}---------&#34;</span>)
-    print_first_instructions(i)
-
-</code></pre></div><p>Let&rsquo;s have a look at the output for the first values :</p>
-<pre><code>---------0x0---------                                                                                                                                                     
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#00f">from</span> capstone <span style="color:#00f">import</span> *
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>base = 0x40127d
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#00f">with</span> open(<span style="color:#a31515">&#34;shuffleMe&#34;</span>, <span style="color:#a31515">&#34;rb&#34;</span>) <span style="color:#00f">as</span> f:
+</span></span><span style="display:flex;"><span>        data = f.read()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>md = Cs(CS_ARCH_X86, CS_MODE_64)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#00f">def</span> print_first_instructions(seed):
+</span></span><span style="display:flex;"><span>    <span style="color:#00f">for</span> _ <span style="color:#00f">in</span> range(25):
+</span></span><span style="display:flex;"><span>        <span style="color:#008000">#Let&#39;s print the first 25 instructions</span>
+</span></span><span style="display:flex;"><span>        seed = ((0xd9 + (0xb5 * seed)) % 0x200)
+</span></span><span style="display:flex;"><span>        addr = base + (seed&lt;&lt;4)
+</span></span><span style="display:flex;"><span>        CODE = data[addr - 0x400000 : addr+20 - 0x400000]
+</span></span><span style="display:flex;"><span>        <span style="color:#008000">#We just want one instruction, but we don&#39;t know how many bytes it is, so we take more and break after the first instruction printed out</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#00f">for</span> dis <span style="color:#00f">in</span> md.disasm(CODE, addr):
+</span></span><span style="display:flex;"><span>            print(<span style="color:#a31515">&#34;0x</span><span style="color:#a31515">%x</span><span style="color:#a31515">:</span><span style="color:#a31515">\t</span><span style="color:#a31515">%s</span><span style="color:#a31515">\t</span><span style="color:#a31515">%s</span><span style="color:#a31515">&#34;</span> %(dis.address, dis.mnemonic, dis.op_str))
+</span></span><span style="display:flex;"><span>            <span style="color:#00f">break</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#00f">for</span> i <span style="color:#00f">in</span> range(0x200):
+</span></span><span style="display:flex;"><span>    print(<span style="color:#a31515">f</span><span style="color:#a31515">&#34;---------</span><span style="color:#a31515">{</span>hex(i)<span style="color:#a31515">}</span><span style="color:#a31515">---------&#34;</span>)
+</span></span><span style="display:flex;"><span>    print_first_instructions(i)
+</span></span></code></pre></div><p>Let&rsquo;s have a look at the output for the first values :</p>
+<pre tabindex="0"><code class="language-x86asm" data-lang="x86asm">---------0x0---------                                                                                                                                                     
 0x40200d:       add     r11, r12                                                                                                                                        
 0x4016dd:       mov     bl, byte ptr [rdi + 0xa]                                                                                                                        
 0x4017ed:       mov     bh, bl                                                                                                                                          
@@ -314,7 +308,7 @@ md = Cs(CS_ARCH_X86, CS_MODE_64)
 ...
 </code></pre><p>The first thing that we notice is that in each case, it takes on byte from <code>[rdi + x]</code>, and perform some <code>xor</code> operations on it. Remember that in <code>rdi</code> we have our first argument to the function, the address of our input. So it is taking one byte from our input. More so, it seems to do it in an incremental manner, but starts at different offset each time. So, to find out the correct argument, we probably have to find on which starts to take values from <code>[rdi + 0]</code>.</p>
 <p>It is the case for <code>0xc1</code> !</p>
-<pre><code>---------0xc1---------
+<pre tabindex="0"><code>---------0xc1---------
 0x40275d:       shl     r10, 8
 0x40226d:       dec     rax
 0x4024bd:       mov     bl, byte ptr [rdi]
@@ -345,43 +339,43 @@ md = Cs(CS_ARCH_X86, CS_MODE_64)
 Next, it performs a <code>xor bx, 0xXXYY</code> followed by a <code>xor rbx, rsi</code>. First, let&rsquo;s imagine assume that our goal is to set <code>rbx</code> to <code>0</code>, which would be the simplest way to check our input - without checking what it does to <code>r9</code>, we can come back to it if needed.
 Then, because we know <code>rsi</code> value easily - it is the <code>seed</code> variable in our script, we can easily figure out each character by performing a simple <code>0xXXYY ^ seed</code>.</p>
 <p>Let&rsquo;s modify our python script to this :</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#00f">from</span> capstone <span style="color:#00f">import</span> *
-
-base = 0x40127d
-
-
-<span style="color:#00f">with</span> open(<span style="color:#a31515">&#34;shuffleMe&#34;</span>, <span style="color:#a31515">&#34;rb&#34;</span>) <span style="color:#00f">as</span> f:
-        data = f.read()
-
-md = Cs(CS_ARCH_X86, CS_MODE_64)
-
-
-<span style="color:#00f">def</span> get_flag():
-    flag = <span style="color:#a31515">&#34;&#34;</span>
-    val = 0
-    seed = 0xc1
-    <span style="color:#00f">while</span> True:
-        <span style="color:#008000">#Let&#39;s print the first 25 instructions</span>
-        seed = ((0xd9 + (0xb5 * seed)) % 0x200)
-        addr = base + (seed&lt;&lt;4)
-        CODE = data[addr - 0x400000 : addr+20 - 0x400000]
-        <span style="color:#008000">#We just want one instruction, but we don&#39;t know how many bytes it is, so we take more and break after the first instruction printed out</span>
-        <span style="color:#00f">for</span> dis <span style="color:#00f">in</span> md.disasm(CODE, addr):
-            <span style="color:#00f">if</span> <span style="color:#a31515">&#34;xor&#34;</span> <span style="color:#00f">in</span> dis.mnemonic <span style="color:#00f">and</span> <span style="color:#a31515">&#34;bx&#34;</span> <span style="color:#00f">in</span> dis.op_str <span style="color:#00f">and</span> <span style="color:#a31515">&#34;rsi&#34;</span> <span style="color:#00f">not</span> <span style="color:#00f">in</span> dis.op_str:
-                val = int(dis.op_str.split(<span style="color:#a31515">&#34;, &#34;</span>)[1], 16)
-            <span style="color:#00f">if</span> <span style="color:#a31515">&#34;rsi&#34;</span> <span style="color:#00f">in</span> dis.op_str:
-                ch = chr(int(hex((val ^ seed))[-2:], 16))
-                <span style="color:#008000">#We do this because the result is 2 bytes long, twice the same byte and we just want one</span>
-                flag = flag + ch
-                <span style="color:#00f">if</span> ch == <span style="color:#a31515">&#34;}&#34;</span>:
-                    <span style="color:#00f">print</span>(flag)
-                    <span style="color:#00f">return</span>
-            <span style="color:#00f">break</span>
-
-
-get_flag()
-</code></pre></div><p>With this, we get the flag : <code>FCSC{af22cfdd46bfc8105cb28e04988f904049dd60be1245718ffef5b9bbf9b509d5}</code>
-We did not check how it calculates the return value to get <code>0x460000</code>, but that was efficient.</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#00f">from</span> capstone <span style="color:#00f">import</span> *
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>base = 0x40127d
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#00f">with</span> open(<span style="color:#a31515">&#34;shuffleMe&#34;</span>, <span style="color:#a31515">&#34;rb&#34;</span>) <span style="color:#00f">as</span> f:
+</span></span><span style="display:flex;"><span>        data = f.read()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>md = Cs(CS_ARCH_X86, CS_MODE_64)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#00f">def</span> get_flag():
+</span></span><span style="display:flex;"><span>    flag = <span style="color:#a31515">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>    val = 0
+</span></span><span style="display:flex;"><span>    seed = 0xc1
+</span></span><span style="display:flex;"><span>    <span style="color:#00f">while</span> <span style="color:#00f">True</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#008000">#Let&#39;s print the first 25 instructions</span>
+</span></span><span style="display:flex;"><span>        seed = ((0xd9 + (0xb5 * seed)) % 0x200)
+</span></span><span style="display:flex;"><span>        addr = base + (seed&lt;&lt;4)
+</span></span><span style="display:flex;"><span>        CODE = data[addr - 0x400000 : addr+20 - 0x400000]
+</span></span><span style="display:flex;"><span>        <span style="color:#008000">#We just want one instruction, but we don&#39;t know how many bytes it is, so we take more and break after the first instruction printed out</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#00f">for</span> dis <span style="color:#00f">in</span> md.disasm(CODE, addr):
+</span></span><span style="display:flex;"><span>            <span style="color:#00f">if</span> <span style="color:#a31515">&#34;xor&#34;</span> <span style="color:#00f">in</span> dis.mnemonic <span style="color:#00f">and</span> <span style="color:#a31515">&#34;bx&#34;</span> <span style="color:#00f">in</span> dis.op_str <span style="color:#00f">and</span> <span style="color:#a31515">&#34;rsi&#34;</span> <span style="color:#00f">not</span> <span style="color:#00f">in</span> dis.op_str:
+</span></span><span style="display:flex;"><span>                val = int(dis.op_str.split(<span style="color:#a31515">&#34;, &#34;</span>)[1], 16)
+</span></span><span style="display:flex;"><span>            <span style="color:#00f">if</span> <span style="color:#a31515">&#34;rsi&#34;</span> <span style="color:#00f">in</span> dis.op_str:
+</span></span><span style="display:flex;"><span>                ch = chr(int(hex((val ^ seed))[-2:], 16))
+</span></span><span style="display:flex;"><span>                <span style="color:#008000">#We do this because the result is 2 bytes long, twice the same byte and we just want one</span>
+</span></span><span style="display:flex;"><span>                flag = flag + ch
+</span></span><span style="display:flex;"><span>                <span style="color:#00f">if</span> ch == <span style="color:#a31515">&#34;}&#34;</span>:
+</span></span><span style="display:flex;"><span>                    print(flag)
+</span></span><span style="display:flex;"><span>                    <span style="color:#00f">return</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#00f">break</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>get_flag()
+</span></span></code></pre></div><p>With this, we get the flag : <code>FCSC{af22cfdd46bfc8105cb28e04988f904049dd60be1245718ffef5b9bbf9b509d5}</code></p>
+<p>We did not check how it calculates the return value to get <code>0x460000</code>, but that was efficient.</p>
 
 
 
@@ -391,42 +385,77 @@ We did not check how it calculates the return value to get <code>0x460000</code>
         </div>
     </div>
 
-    <section id="comments">
-    <div class="py-3 content">
-        <div class="container">
-            <div class="row justify-content-center">
-                <div class="col-sm-12 col-lg-8">
-                    <div class="comments">
-                        <script src="https://utteranc.es/client.js" repo=""
-                            issue-term="pathname" label="comment" theme="github-light" crossorigin="anonymous" async>
-                            </script>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
     
 
 
     
 
     
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.2.0/highlight.min.js" integrity="sha512-TDKKr+IvoqZnPzc3l35hdjpHD0m+b2EC2SrLEgKDRWpxf2rFCxemkgvJ5kfU48ip+Y+m2XVKyOCD85ybtlZDmw==" crossorigin="anonymous"></script>
+        <script src="https://blog.slowerzs.net/js/highlight.min.js"></script>
         
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.2.0/languages/python.min.js" defer></script>
+        <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/python.min.js"></script>
+        
+        <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/c.min.js"></script>
+        
+        <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/x86asm.min.js"></script>
+        
+        <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/armasm.min.js"></script>
+        
+        <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/bash.min.js"></script>
+        
+        <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/shell.min.js"></script>
+        
+        <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/csharp.min.js"></script>
         
         <script>
             window.addEventListener('load', function() {
-                hljs.initHighlighting();
+                hljs.configure({
+                    ignoreUnescapedHTML: true
+                })
+                hljs.highlightAll();
             }, true);
         </script>
     
 
-    
+    <div id="modal" class="modal">
+        <img id="modal-content" class="modal-content">
+    </div>
+    <script>
+
+        if (typeof screen.orientation !== 'undefined') {
+            var modal = document.getElementById('modal');
+
+            modal.addEventListener('click', function(e) {
+              if (e.target === e.currentTarget) {
+                modal.style.display = "none";
+                document.body.style.overflowY = "visible"
+              }
+            });
+            document.addEventListener('keydown', function(e) {
+                if (e.key === "Escape") {
+                    modal.style.display = "none";
+                    document.body.style.overflowY = "visible"
+                }
+            })
+
+            
+            document.addEventListener('click', function (e) { 
+                if (e.target.parentElement.parentElement.className.indexOf('figure') !== -1) {
+                    var img = e.target;
+                    var modalImg = document.getElementById("modal-content");
+                    document.body.style.overflowY = "hidden"
+                    modal.style.display = "flex";
+                    modalImg.src = img.src;
+                    captionText.innerHTML = img.alt;
+                }
+            });
+        }
+        
+
+    </script>
 
     
-    
+
 </body>
 
 </html>

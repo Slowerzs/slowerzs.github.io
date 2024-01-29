@@ -12,35 +12,30 @@
     <meta property="og:site_name" content="Slowerzs&#39; blog" />
     <meta property="og:locale" content="en_US" />
     <meta property="og:type" content="article" />
-    <meta property="og:url" content="https://slowerzs.github.io/categories/" />
+    <meta property="og:url" content="https://blog.slowerzs.net/categories/" />
     <meta property="og:title" content="Categories" />
-    <meta property="og:image" content="https://slowerzs.github.io/" />
+    <meta property="og:image" content="https://blog.slowerzs.net/images/small-favicon.png" />
     <meta property="og:description" content="" />
 
     <meta name="twitter:card" content="summary_large_image" />
     
     <meta name="twitter:title" content="Categories" />
     <meta name="twitter:description" content="" />
-    <meta name="twitter:image" content="https://slowerzs.github.io/" />
+    <meta name="twitter:image" content="https://blog.slowerzs.net/images/small-favicon.png" />
 
-    <link rel="canonical" href="https://slowerzs.github.io/categories/">
+    <link rel="canonical" href="https://blog.slowerzs.net/categories/">
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha512-MoRNloxbStBcD8z3M/2BmnT+rg4IsMxPkXaGh2zD6LGNNFE80W3onsAhRcMAMrSoyWL9xD7Ert0men7vR8LUZg==" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://blog.slowerzs.net/css/bootstrap.min.css" />
 
-    <link rel="stylesheet" href="https://slowerzs.github.io/css/custom.css" />
+    <link rel="stylesheet" href="https://blog.slowerzs.net/css/custom.css" />
 
     
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.2.0/styles/github-gist.min.css" integrity="sha512-od7JLoOTxM8w/HSKGzP9Kexc20K9p/M2zxSWsd7H1e4Ctf+8SQFtCWEZnW5u6ul5ehSECa5QmOk9ju2nQMmlVA==" crossorigin="anonymous" />
-    
-
+    <link rel="stylesheet" href="https://blog.slowerzs.net/css/stackoverflow-light.min.css">
     
 
     <link rel="shortcut icon"
-        href="https://slowerzs.github.io/images/favicon.png">
+        href="https://blog.slowerzs.net/images/favicon.png?">
 
-    
-    <link href="https://slowerzs.github.io/index.xml" rel="alternate" type="application/rss+xml" title="Slowerzs&#39; blog" />
-    
 </head>
 
 <body>
@@ -49,7 +44,7 @@
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-auto">
-                <a href="https://slowerzs.github.io/">
+                <a href="https://blog.slowerzs.net/">
                     <h1 class="name">Slowerzs&#39; blog</h1>
                 </a>
             </div>
@@ -59,23 +54,23 @@
             <ul class="nav nav-primary">
                 
                 <li class="nav-item">
-                    <a class="nav-link" href="https://slowerzs.github.io/">
+                    <a class="nav-link" href="https://blog.slowerzs.net/">
                         
                         Home
                     </a>
                 </li>
                 
                 <li class="nav-item">
-                    <a class="nav-link" href="https://slowerzs.github.io/about/">
+                    <a class="nav-link" href="https://github.com/Slowerzs">
                         
-                        About
+                        Github
                     </a>
                 </li>
                 
                 <li class="nav-item">
-                    <a class="nav-link" href="https://github.com/Slowerzs">
+                    <a class="nav-link" href="https://twitter.com/slowerzs">
                         
-                        GitHub
+                        Twitter
                     </a>
                 </li>
                 
@@ -106,21 +101,71 @@
     
 
     
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.2.0/highlight.min.js" integrity="sha512-TDKKr+IvoqZnPzc3l35hdjpHD0m+b2EC2SrLEgKDRWpxf2rFCxemkgvJ5kfU48ip+Y+m2XVKyOCD85ybtlZDmw==" crossorigin="anonymous"></script>
+        <script src="https://blog.slowerzs.net/js/highlight.min.js"></script>
         
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.2.0/languages/python.min.js" defer></script>
+        <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/python.min.js"></script>
+        
+        <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/c.min.js"></script>
+        
+        <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/x86asm.min.js"></script>
+        
+        <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/armasm.min.js"></script>
+        
+        <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/bash.min.js"></script>
+        
+        <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/shell.min.js"></script>
+        
+        <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/csharp.min.js"></script>
         
         <script>
             window.addEventListener('load', function() {
-                hljs.initHighlighting();
+                hljs.configure({
+                    ignoreUnescapedHTML: true
+                })
+                hljs.highlightAll();
             }, true);
         </script>
     
 
-    
+    <div id="modal" class="modal">
+        <img id="modal-content" class="modal-content">
+    </div>
+    <script>
+
+        if (typeof screen.orientation !== 'undefined') {
+            var modal = document.getElementById('modal');
+
+            modal.addEventListener('click', function(e) {
+              if (e.target === e.currentTarget) {
+                modal.style.display = "none";
+                document.body.style.overflowY = "visible"
+              }
+            });
+            document.addEventListener('keydown', function(e) {
+                if (e.key === "Escape") {
+                    modal.style.display = "none";
+                    document.body.style.overflowY = "visible"
+                }
+            })
+
+            
+            document.addEventListener('click', function (e) { 
+                if (e.target.parentElement.parentElement.className.indexOf('figure') !== -1) {
+                    var img = e.target;
+                    var modalImg = document.getElementById("modal-content");
+                    document.body.style.overflowY = "hidden"
+                    modal.style.display = "flex";
+                    modalImg.src = img.src;
+                    captionText.innerHTML = img.alt;
+                }
+            });
+        }
+        
+
+    </script>
 
     
-    
+
 </body>
 
 </html>
