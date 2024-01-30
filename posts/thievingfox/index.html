@@ -90,7 +90,7 @@
 <p>During pentests, I&rsquo;ve had great successes using <a href="https://github.com/GhostPack/KeeThief">KeeThief</a> and mimikatz&rsquo;s <code>ts::mstsc</code> <a href="https://github.com/gentilkiwi/mimikatz/blob/master/mimikatz/modules/kuhl_m_ts.c#L335">module</a> to gather additional credentials from KeePass and the default RDP client on Windows, on compromised admin workstations.</p>
 <p>Using these tools, I found some shortcomings, which <code>ThievingFox</code> aims to address, namely:</p>
 <ul>
-<li>Not all administrators are necessarily using these specific applications, this requires identifying which requires identifying potential victims</li>
+<li>Not all administrators are necessarily using these specific applications, which requires identifying potential victims</li>
 <li>Administrators are probably not running with KeePass or the default RDP client at all time, which requires actively waiting for them to open them</li>
 </ul>
 <p>While doing so, I added other targets than KeePass and the default RDP client.</p>
