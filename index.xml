@@ -13,7 +13,7 @@
       <link>https://blog.slowerzs.net/posts/thievingfox/</link>
       <pubDate>Sun, 21 Jan 2024 16:26:38 +0100</pubDate>
       <guid>https://blog.slowerzs.net/posts/thievingfox/</guid>
-      <description>ThievingFox is a collection of post-exploitation tools, to gather credentials from workstations and servers in the context of penetration tests and similar engagements. It works by making the target application load a malicious library, which performs in-memory hooking to gather credentials.&#xA;During pentests, I&amp;rsquo;ve had great successes using KeeThief and mimikatz&amp;rsquo;s ts::mstsc module to gather additional credentials from KeePass and the default RDP client on Windows, on compromised admin workstations.</description>
+      <description>ThievingFox is a collection of post-exploitation tools, used to gather credentials from workstations and servers in the context of penetration tests and similar engagements. It works by making the target application load a malicious library, which performs in-memory hooking to gather credentials.&#xA;During pentests, I&amp;rsquo;ve had great successes using KeeThief and mimikatz&amp;rsquo;s ts::mstsc module to gather additional credentials from KeePass and the default RDP client on Windows, on compromised admin workstations.</description>
     </item>
     <item>
       <title>Linux Kernel - Syscalls</title>
