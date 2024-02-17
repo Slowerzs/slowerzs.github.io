@@ -17,7 +17,7 @@
     <meta property="og:image" content="https://blog.slowerzs.net/images/small-favicon.png" />
     <meta property="og:description" content="" />
 
-    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:card" content=" summary_large_image" />
     
     <meta name="twitter:title" content="Categories" />
     <meta name="twitter:description" content="" />
@@ -30,7 +30,8 @@
     <link rel="stylesheet" href="https://blog.slowerzs.net/css/custom.css" />
 
     
-    <link rel="stylesheet" href="https://blog.slowerzs.net/css/stackoverflow-light.min.css">
+    <link rel="stylesheet" id="light-css" href="https://blog.slowerzs.net/css/stackoverflow-light.min.css" media="screen">
+    <link rel="stylesheet" id="dark-css" href="https://blog.slowerzs.net/css/stackoverflow-dark.min.css" media="screen">
     
 
     <link rel="shortcut icon"
@@ -39,42 +40,106 @@
 </head>
 
 <body>
+    <script>
+
+        window.addEventListener('load', function () {
+            hljs.configure({
+                ignoreUnescapedHTML: true
+            })
+            hljs.highlightAll();
+        }, true);
+
+        let darkTheme = localStorage.getItem("darkTheme")
+        if (darkTheme === null) {
+            if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                localStorage.setItem("darkTheme", true);
+                document.getElementById("light-css").setAttribute('disabled', 'true')
+                document.getElementById("dark-css").removeAttribute('disabled')
+            } else {
+                document.documentElement.setAttribute('data-theme', 'light');
+                localStorage.setItem("darkTheme", false);
+                document.getElementById("dark-css").setAttribute('disabled', 'true')
+                document.getElementById("light-css").removeAttribute('disabled')
+            }
+        } else if (darkTheme === "true") {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            document.getElementById("light-css").setAttribute('disabled', 'true')
+            document.getElementById("dark-css").removeAttribute('disabled')
+        } else {
+            document.documentElement.setAttribute('data-theme', 'light');
+            document.getElementById("dark-css").setAttribute('disabled', 'true')
+            document.getElementById("light-css").removeAttribute('disabled')
+        }
+
+        function switchTheme() {
+            let darkTheme = localStorage.getItem("darkTheme");
+            if (darkTheme === null) {
+                darkTheme = window.matchMedia("(prefers-color-scheme: dark)").matches.toString()
+            }
+
+            if (darkTheme === "true") {
+                document.documentElement.setAttribute('data-theme', 'light');
+                localStorage.setItem("darkTheme", false);
+                document.getElementById("dark-css").setAttribute('disabled', 'true')
+                document.getElementById("light-css").removeAttribute('disabled')
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                localStorage.setItem("darkTheme", true);
+                document.getElementById("light-css").setAttribute('disabled', 'true')
+                document.getElementById("dark-css").removeAttribute('disabled')
+            }
+
+        }
+    </script>
     
 <div class="mt-xl header">
     <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-auto">
-                <a href="https://blog.slowerzs.net/">
-                    <h1 class="name">Slowerzs&#39; blog</h1>
-                </a>
+        <div>
+            <div class="row justify-content-center">
+                <div class="row">
+                    <a href="https://blog.slowerzs.net/">
+                        <h1 class="name">Slowerzs&#39; blog</h1>
+                    </a>
+                    <img id="switcher" onclick="switchTheme()" src="https://blog.slowerzs.net/images/theme-dark.svg" height="32px" width="32px"
+                        style="position: absolute; left: 93%; transform: translateX(-93%);" />
+                </div>
             </div>
-        </div>
 
-        <div class="row justify-content-center">
-            <ul class="nav nav-primary">
-                
-                <li class="nav-item">
-                    <a class="nav-link" href="https://blog.slowerzs.net/">
-                        
-                        Home
-                    </a>
-                </li>
-                
-                <li class="nav-item">
-                    <a class="nav-link" href="https://github.com/Slowerzs">
-                        
-                        Github
-                    </a>
-                </li>
-                
-                <li class="nav-item">
-                    <a class="nav-link" href="https://twitter.com/slowerzs">
-                        
-                        Twitter
-                    </a>
-                </li>
-                
-            </ul>
+            <div class="row justify-content-center">
+                <ul class="nav nav-primary">
+                    
+                    <li class="nav-item">
+                        <a class="nav-link" href="https://blog.slowerzs.net/">
+                            
+                            Home
+                        </a>
+                    </li>
+                    
+                    <li class="nav-item">
+                        <a class="nav-link" href="https://github.com/Slowerzs">
+                            
+                            Github
+                        </a>
+                    </li>
+                    
+                    <li class="nav-item">
+                        <a class="nav-link" href="https://twitter.com/slowerzs">
+                            
+                            Twitter
+                        </a>
+                    </li>
+                    
+                    <li class="nav-item">
+                        <a class="nav-link" href="https://blog.slowerzs.net/archive">
+                            
+                            Archive
+                        </a>
+                    </li>
+                    
+                </ul>
+            </div>
+
         </div>
     </div>
 </div>
@@ -101,30 +166,23 @@
     
 
     
-        <script src="https://blog.slowerzs.net/js/highlight.min.js"></script>
-        
-        <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/python.min.js"></script>
-        
-        <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/c.min.js"></script>
-        
-        <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/x86asm.min.js"></script>
-        
-        <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/armasm.min.js"></script>
-        
-        <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/bash.min.js"></script>
-        
-        <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/shell.min.js"></script>
-        
-        <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/csharp.min.js"></script>
-        
-        <script>
-            window.addEventListener('load', function() {
-                hljs.configure({
-                    ignoreUnescapedHTML: true
-                })
-                hljs.highlightAll();
-            }, true);
-        </script>
+    <script src="https://blog.slowerzs.net/js/highlight.min.js"></script>
+    
+    
+    <script src="https://blog.slowerzs.net/js/python.min.js"></script>
+    
+    <script src="https://blog.slowerzs.net/js/c.min.js"></script>
+    
+    <script src="https://blog.slowerzs.net/js/x86asm.min.js"></script>
+    
+    <script src="https://blog.slowerzs.net/js/armasm.min.js"></script>
+    
+    <script src="https://blog.slowerzs.net/js/bash.min.js"></script>
+    
+    <script src="https://blog.slowerzs.net/js/shell.min.js"></script>
+    
+    <script src="https://blog.slowerzs.net/js/csharp.min.js"></script>
+    
     
 
     <div id="modal" class="modal">
@@ -133,34 +191,34 @@
     <script>
 
         if (typeof screen.orientation !== 'undefined') {
+            
             var modal = document.getElementById('modal');
 
-            modal.addEventListener('click', function(e) {
-              if (e.target === e.currentTarget) {
-                modal.style.display = "none";
-                document.body.style.overflowY = "visible"
-              }
+            modal.addEventListener('click', function (e) {
+                if (e.target === e.currentTarget) {
+                    modal.style.display = "none";
+                    document.body.style.overflowY = "visible"
+                }
             });
-            document.addEventListener('keydown', function(e) {
+            document.addEventListener('keydown', function (e) {
                 if (e.key === "Escape") {
                     modal.style.display = "none";
                     document.body.style.overflowY = "visible"
                 }
             })
 
-            
-            document.addEventListener('click', function (e) { 
+            document.addEventListener('click', function (e) {
                 if (e.target.parentElement.parentElement.className.indexOf('figure') !== -1) {
                     var img = e.target;
                     var modalImg = document.getElementById("modal-content");
                     document.body.style.overflowY = "hidden"
                     modal.style.display = "flex";
                     modalImg.src = img.src;
-                    captionText.innerHTML = img.alt;
                 }
             });
+
         }
-        
+
 
     </script>
 

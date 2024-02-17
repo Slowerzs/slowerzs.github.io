@@ -1,20 +1,13 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Slowerzs&#39; blog</title>
-    <link>https://blog.slowerzs.net/</link>
-    <description>Recent content on Slowerzs&#39; blog</description>
+    <title>Archives on Slowerzs&#39; blog</title>
+    <link>https://blog.slowerzs.net/archive/</link>
+    <description>Recent content in Archives on Slowerzs&#39; blog</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
-    <lastBuildDate>Sun, 21 Jan 2024 16:26:38 +0100</lastBuildDate>
-    <atom:link href="https://blog.slowerzs.net/index.xml" rel="self" type="application/rss+xml" />
-    <item>
-      <title>ThievingFox - Remotely retrieving credentials from password managers and Windows utilities</title>
-      <link>https://blog.slowerzs.net/posts/thievingfox/</link>
-      <pubDate>Sun, 21 Jan 2024 16:26:38 +0100</pubDate>
-      <guid>https://blog.slowerzs.net/posts/thievingfox/</guid>
-      <description>ThievingFox is a collection of post-exploitation tools, used to gather credentials from workstations and servers in the context of penetration tests and similar engagements. It works by making the target application load a malicious library, which performs in-memory hooking to gather credentials.&#xA;During pentests, I&amp;rsquo;ve had great successes using KeeThief and mimikatz&amp;rsquo;s ts::mstsc module to gather additional credentials from KeePass and the default RDP client on Windows, on compromised admin workstations.</description>
-    </item>
+    <lastBuildDate>Tue, 26 Oct 2021 15:47:48 +0200</lastBuildDate>
+    <atom:link href="https://blog.slowerzs.net/archive/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Linux Kernel - Syscalls</title>
       <link>https://blog.slowerzs.net/archive/linux-kernel-syscalls/</link>
