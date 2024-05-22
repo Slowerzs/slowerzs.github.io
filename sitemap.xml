@@ -2,11 +2,14 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
+    <loc>https://blog.slowerzs.net/posts/pplsystem/</loc>
+    <lastmod>2024-05-22T19:36:10+02:00</lastmod>
+  </url><url>
     <loc>https://blog.slowerzs.net/posts/</loc>
-    <lastmod>2024-01-21T16:26:38+01:00</lastmod>
+    <lastmod>2024-05-22T19:36:10+02:00</lastmod>
   </url><url>
     <loc>https://blog.slowerzs.net/</loc>
-    <lastmod>2024-01-21T16:26:38+01:00</lastmod>
+    <lastmod>2024-05-22T19:36:10+02:00</lastmod>
   </url><url>
     <loc>https://blog.slowerzs.net/posts/thievingfox/</loc>
     <lastmod>2024-01-21T16:26:38+01:00</lastmod>

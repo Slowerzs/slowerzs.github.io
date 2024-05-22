@@ -453,6 +453,12 @@ td:last-child {
     
     --blockquote-text-color: #7a7a7a;
     --blockquote-highlight-color: #e5e5e5;
+    
+    /**/
+    --chroma-keyword: #015692;
+    --chroma-string-litteral: #54790d;
+    --chroma-name-function: #b75501;
+    --chroma-litteral-number: #6533c2;
 }
 
 [data-theme="dark"] {
@@ -480,6 +486,12 @@ td:last-child {
     --blockquote-highlight-color: #7a7a7a;
 
     --list-marker-color: #FEE779;
+
+    /**/
+    --chroma-keyword: #88aece;
+    --chroma-string-litteral: #b5bd68;
+    --chroma-name-function: #f08d49;
+    --chroma-litteral-number: #ae81ff;
 }
 
 .content .markdown {

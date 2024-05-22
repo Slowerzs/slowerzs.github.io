@@ -21,6 +21,8 @@
     
     <meta name="twitter:title" content="Linux Kernel - Syscalls" />
     <meta name="twitter:description" content="" />
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@slowerzs">
     <meta name="twitter:image" content="https://blog.slowerzs.net/images/small-favicon.png" />
 
     <link rel="canonical" href="https://blog.slowerzs.net/archive/linux-kernel-syscalls/">
@@ -28,10 +30,8 @@
     <link rel="stylesheet" href="https://blog.slowerzs.net/css/bootstrap.min.css" />
 
     <link rel="stylesheet" href="https://blog.slowerzs.net/css/custom.css" />
+    <link rel="stylesheet" href="https://blog.slowerzs.net/css/syntax.css" />
 
-    
-    <link rel="stylesheet" id="light-css" href="https://blog.slowerzs.net/css/stackoverflow-light.min.css" media="screen">
-    <link rel="stylesheet" id="dark-css" href="https://blog.slowerzs.net/css/stackoverflow-dark.min.css" media="screen">
     
 
     <link rel="shortcut icon"
@@ -171,7 +171,7 @@ MSR (after saving the address of the instruction following SYSCALL into RCX)</p>
 <p>What we can learn from this is that there is a Model Specific Register (MSR) named IA32_LSTAR, that should contain the address of our system-call handler. We will see what value it contains just after.</p>
 <p>We also learn that the address at which we should return once the syscall is done is saved in <code>RCX</code>, which means that this register is not saved ! (This also explains the value that you can find in the <code>RCX</code> register after a syscall, if you&rsquo;ve ever wondered), same goes for the <code>RFLAGS</code>, which overwrites the <code>R11</code> register.</p>
 <p>So, where is this <code>LSTAR</code> register set ? This is done during the booting process, in <a href="https://elixir.bootlin.com/linux/v5.14.14/source/arch/x86/kernel/cpu/common.c#L1753"><code>arch/x86/kernel/cpu/common.c</code></a>, the relevant line is :</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C" data-lang="C"><span style="display:flex;"><span>wrmsrl(MSR_LSTAR, (<span style="color:#2b91af">unsigned</span> <span style="color:#2b91af">long</span>)entry_SYSCALL_64);
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-C" data-lang="C"><span class="line"><span class="cl"><span class="nf">wrmsrl</span><span class="p">(</span><span class="n">MSR_LSTAR</span><span class="p">,</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="kt">long</span><span class="p">)</span><span class="n">entry_SYSCALL_64</span><span class="p">);</span>
 </span></span></code></pre></div><p>The <code>wrmsrl</code> is a function that ends up using the <code>WRMSR</code> instruction to write to a model specific register.</p>
 <h2 id="the-entrypoint">The entrypoint</h2>
 <p>Once the syscall instruction is issued, we end up at the <code>entry_SYSCALL_64</code> symbol. This symbol is defined in the <a href="https://elixir.bootlin.com/linux/v5.14.14/source/arch/x86/entry/entry_64.S#L87"><code>arch/x86/entry/entry_64.S</code></a> file.</p>
@@ -212,21 +212,21 @@ This struct is basically all the registers in a specific order. <code>PUSH_AND_C
 	call	do_syscall_64		
 </code></pre><p>We are setting up the arguments for a call to <code>do_syscall_64</code>, the first argument being a pointer to our new <code>struct pt_regs</code>, the second being the number of the syscall we are trying to call.</p>
 <p>The <code>do_syscall_64</code> is a C function, defined in <a href="https://elixir.bootlin.com/linux/v5.14.14/source/arch/x86/entry/common.c#L73"><code>arch/x86/entry/common.c</code></a>.</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C" data-lang="C"><span style="display:flex;"><span>__visible noinstr <span style="color:#2b91af">void</span> do_syscall_64(<span style="color:#00f">struct</span> pt_regs *regs, <span style="color:#2b91af">int</span> nr)
-</span></span><span style="display:flex;"><span>{
-</span></span><span style="display:flex;"><span>	add_random_kstack_offset();
-</span></span><span style="display:flex;"><span>	nr = syscall_enter_from_user_mode(regs, nr);
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>	instrumentation_begin();
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>	<span style="color:#00f">if</span> (!do_syscall_x64(regs, nr) &amp;&amp; !do_syscall_x32(regs, nr) &amp;&amp; nr != -1) {
-</span></span><span style="display:flex;"><span>		<span style="color:#008000">/* Invalid system call, but still a system call. */</span>
-</span></span><span style="display:flex;"><span>		regs-&gt;ax = __x64_sys_ni_syscall(regs);
-</span></span><span style="display:flex;"><span>	}
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>	instrumentation_end();
-</span></span><span style="display:flex;"><span>	syscall_exit_to_user_mode(regs);
-</span></span><span style="display:flex;"><span>}
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-C" data-lang="C"><span class="line"><span class="cl"><span class="n">__visible</span> <span class="n">noinstr</span> <span class="kt">void</span> <span class="nf">do_syscall_64</span><span class="p">(</span><span class="k">struct</span> <span class="n">pt_regs</span> <span class="o">*</span><span class="n">regs</span><span class="p">,</span> <span class="kt">int</span> <span class="n">nr</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">add_random_kstack_offset</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">	<span class="n">nr</span> <span class="o">=</span> <span class="nf">syscall_enter_from_user_mode</span><span class="p">(</span><span class="n">regs</span><span class="p">,</span> <span class="n">nr</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nf">instrumentation_begin</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nf">do_syscall_x64</span><span class="p">(</span><span class="n">regs</span><span class="p">,</span> <span class="n">nr</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="nf">do_syscall_x32</span><span class="p">(</span><span class="n">regs</span><span class="p">,</span> <span class="n">nr</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="n">nr</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="cm">/* Invalid system call, but still a system call. */</span>
+</span></span><span class="line"><span class="cl">		<span class="n">regs</span><span class="o">-&gt;</span><span class="n">ax</span> <span class="o">=</span> <span class="nf">__x64_sys_ni_syscall</span><span class="p">(</span><span class="n">regs</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nf">instrumentation_end</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">syscall_exit_to_user_mode</span><span class="p">(</span><span class="n">regs</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
 </span></span></code></pre></div><p>The first function called, <code>add_random_kstack_offset</code>, is related to <code>KASLR</code> : its goal is to add a random offset to the stack address, and this for each syscall. It uses GCC&rsquo;s <code>__builtin_alloca</code> to add a random constant to the stack pointer, and inline assembly to keep the offset value.</p>
 <p>Next, <code>syscall_enter_from_user_mode</code> is called, which is simply a wrapper for <code>__syscall_enter_from_user_work</code>, defined in <a href="https://elixir.bootlin.com/linux/v5.14.14/source/arch/x86/entry/common.c#L73"><code>kernel/entry/common.c</code></a></p>
 <p>From what I understand, this function is related to syscall tracing, for instance when using seccomp, and simply returns the syscall number when no tracing is taking place, which we will assume here.
@@ -235,43 +235,43 @@ Similarily, <code>instrumentation_begin</code> is called, which is related to in
 <p>The reason for that is that even if we issue a <code>SYSCALL</code> instruction in a 64 bits process, we can still access some 32 bits syscalls, exposed for compatibility ! If you didn&rsquo;t know, issuing a syscall with <code>RAX</code> set to <code>0x40000000 + x</code>, you can call these compatibility syscalls (<code>x</code> being the number of the specific syscall your are intersted in) !</p>
 <p>This is also the reason you&rsquo;ll almost always see in all seccomp rules a line at the begginning that looks like <code># A &gt;= 0x40000000 ? dead : next</code>, to ensure we can&rsquo;t escape the filter using this x32 ABI.</p>
 <p>Taking a glimpse at the begin of <code>do_syscall_x32</code>, we can see this :</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C" data-lang="C"><span style="display:flex;"><span><span style="color:#00f">static</span> __always_inline <span style="color:#2b91af">bool</span> do_syscall_x32(<span style="color:#00f">struct</span> pt_regs *regs, <span style="color:#2b91af">int</span> nr)
-</span></span><span style="display:flex;"><span>{
-</span></span><span style="display:flex;"><span>	<span style="color:#008000">/*
-</span></span></span><span style="display:flex;"><span><span style="color:#008000">	 * Adjust the starting offset of the table, and convert numbers
-</span></span></span><span style="display:flex;"><span><span style="color:#008000">	 * &lt; __X32_SYSCALL_BIT to very high and thus out of range
-</span></span></span><span style="display:flex;"><span><span style="color:#008000">	 * numbers for comparisons.
-</span></span></span><span style="display:flex;"><span><span style="color:#008000">	 */</span>
-</span></span><span style="display:flex;"><span>	<span style="color:#2b91af">unsigned</span> <span style="color:#2b91af">int</span> xnr = nr - __X32_SYSCALL_BIT
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-C" data-lang="C"><span class="line"><span class="cl"><span class="k">static</span> <span class="n">__always_inline</span> <span class="kt">bool</span> <span class="nf">do_syscall_x32</span><span class="p">(</span><span class="k">struct</span> <span class="n">pt_regs</span> <span class="o">*</span><span class="n">regs</span><span class="p">,</span> <span class="kt">int</span> <span class="n">nr</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="cm">/*
+</span></span></span><span class="line"><span class="cl"><span class="cm">	 * Adjust the starting offset of the table, and convert numbers
+</span></span></span><span class="line"><span class="cl"><span class="cm">	 * &lt; __X32_SYSCALL_BIT to very high and thus out of range
+</span></span></span><span class="line"><span class="cl"><span class="cm">	 * numbers for comparisons.
+</span></span></span><span class="line"><span class="cl"><span class="cm">	 */</span>
+</span></span><span class="line"><span class="cl">	<span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">xnr</span> <span class="o">=</span> <span class="n">nr</span> <span class="o">-</span> <span class="n">__X32_SYSCALL_BIT</span>
 </span></span></code></pre></div><p>where <code>__X32_SYSCALL_BIT</code> is defined using</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C" data-lang="C"><span style="display:flex;"><span><span style="color:#00f">#define __X32_SYSCALL_BIT	0x40000000
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-C" data-lang="C"><span class="line"><span class="cl"><span class="cp">#define __X32_SYSCALL_BIT	0x40000000
 </span></span></span></code></pre></div><p>Afterwards <code>xrn</code> will be considered as the number of the syscall in the list of compatibility ones.</p>
 <p>But let&rsquo;s focus on <code>do_syscall_x64</code> for now :)</p>
 <h3 id="the-dispatcher">The dispatcher</h3>
 <p>This function, <code>do_syscall_x64</code>, is defined in <a href="https://elixir.bootlin.com/linux/v5.14.14/source/arch/x86/entry/common.c#L40"><code>arch/x86/entry/common.c</code></a></p>
 <p>Its goal is simple :  it has to choose the correct handler, if it exists, and call it, passing the <code>struct pt_regs</code> as an argument. It dispatches to the appropriate handler.</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C" data-lang="C"><span style="display:flex;"><span><span style="color:#00f">static</span> __always_inline <span style="color:#2b91af">bool</span> do_syscall_x64(<span style="color:#00f">struct</span> pt_regs *regs, <span style="color:#2b91af">int</span> nr)
-</span></span><span style="display:flex;"><span>{
-</span></span><span style="display:flex;"><span>	<span style="color:#008000">/*
-</span></span></span><span style="display:flex;"><span><span style="color:#008000">	 * Convert negative numbers to very high and thus out of range
-</span></span></span><span style="display:flex;"><span><span style="color:#008000">	 * numbers for comparisons.
-</span></span></span><span style="display:flex;"><span><span style="color:#008000">	 */</span>
-</span></span><span style="display:flex;"><span>	<span style="color:#2b91af">unsigned</span> <span style="color:#2b91af">int</span> unr = nr;
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>	<span style="color:#00f">if</span> (likely(unr &lt; NR_syscalls)) {
-</span></span><span style="display:flex;"><span>		unr = array_index_nospec(unr, NR_syscalls);
-</span></span><span style="display:flex;"><span>		regs-&gt;ax = sys_call_table[unr](regs);
-</span></span><span style="display:flex;"><span>		<span style="color:#00f">return</span> true;
-</span></span><span style="display:flex;"><span>	}
-</span></span><span style="display:flex;"><span>	<span style="color:#00f">return</span> false;
-</span></span><span style="display:flex;"><span>}
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-C" data-lang="C"><span class="line"><span class="cl"><span class="k">static</span> <span class="n">__always_inline</span> <span class="kt">bool</span> <span class="nf">do_syscall_x64</span><span class="p">(</span><span class="k">struct</span> <span class="n">pt_regs</span> <span class="o">*</span><span class="n">regs</span><span class="p">,</span> <span class="kt">int</span> <span class="n">nr</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="cm">/*
+</span></span></span><span class="line"><span class="cl"><span class="cm">	 * Convert negative numbers to very high and thus out of range
+</span></span></span><span class="line"><span class="cl"><span class="cm">	 * numbers for comparisons.
+</span></span></span><span class="line"><span class="cl"><span class="cm">	 */</span>
+</span></span><span class="line"><span class="cl">	<span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">unr</span> <span class="o">=</span> <span class="n">nr</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="p">(</span><span class="nf">likely</span><span class="p">(</span><span class="n">unr</span> <span class="o">&lt;</span> <span class="n">NR_syscalls</span><span class="p">))</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="n">unr</span> <span class="o">=</span> <span class="nf">array_index_nospec</span><span class="p">(</span><span class="n">unr</span><span class="p">,</span> <span class="n">NR_syscalls</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">		<span class="n">regs</span><span class="o">-&gt;</span><span class="n">ax</span> <span class="o">=</span> <span class="n">sys_call_table</span><span class="p">[</span><span class="n">unr</span><span class="p">](</span><span class="n">regs</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="nb">true</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
 </span></span></code></pre></div><p>First, we check if the syscall number is out of range, comparing the syscall number to <code>NR_syscalls</code>, which is a macro, whose value is the highest number for a syscall, in this version, it is <code>448</code>.</p>
 <p><code>array_index_nospec</code> is a function used to mitigate against speculative attacks, so we will safely assume it returns our syscall number.</p>
 <p>Then, the call to our handler is made ! For this, the array <code>sys_call_table</code>, is dereferenced by our syscall number, and the handler is called with our <code>struct pt_regs</code> as an argument. The return value of the handler is stored in our registers structure, and we are ready to start the return to userland !</p>
 <p>But before doing that, we will take a look at how the <code>sys_call_table</code> is constructed. It is located in <a href="https://elixir.bootlin.com/linux/v5.14.14/source/arch/x86/entry/syscall_64.c#L16"><code>arch/x86/entry/syscall_64.c</code></a></p>
-<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C" data-lang="C"><span style="display:flex;"><span>asmlinkage <span style="color:#00f">const</span> <span style="color:#2b91af">sys_call_ptr_t</span> sys_call_table[] = {
-</span></span><span style="display:flex;"><span><span style="color:#00f">#include</span> <span style="color:#00f">&lt;asm/syscalls_64.h&gt;</span><span style="color:#00f">
-</span></span></span><span style="display:flex;"><span><span style="color:#00f"></span>};
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-C" data-lang="C"><span class="line"><span class="cl"><span class="n">asmlinkage</span> <span class="k">const</span> <span class="kt">sys_call_ptr_t</span> <span class="n">sys_call_table</span><span class="p">[]</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;asm/syscalls_64.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="p">};</span>
 </span></span></code></pre></div><p>So actually, this is not really defined here. But if we look for the file <code>syscalls_64.h</code> in the source code, we can&rsquo;t find it ! The reason for this is because this header file is dynamically generated, using the <a href="https://elixir.bootlin.com/linux/v5.14.14/source/scripts/syscalltbl.sh"><code>script/syscalltbl.sh</code></a> script.</p>
 <p>This script is used to parse the file <a href="https://elixir.bootlin.com/linux/v5.14.14/source/arch/x86/entry/syscalls/syscall_64.tbl"><code>arch/x86/entry/syscalls/syscall_64.tbl</code></a>, which contains the list of our syscalls.</p>
 <p>Looking at the start, we can see the usual suspects.</p>
@@ -382,24 +382,6 @@ code at privilege level 3. It does so by loading RIP from RCX and loading RFLAGS
 
     
 
-    
-    <script src="https://blog.slowerzs.net/js/highlight.min.js"></script>
-    
-    
-    <script src="https://blog.slowerzs.net/js/python.min.js"></script>
-    
-    <script src="https://blog.slowerzs.net/js/c.min.js"></script>
-    
-    <script src="https://blog.slowerzs.net/js/x86asm.min.js"></script>
-    
-    <script src="https://blog.slowerzs.net/js/armasm.min.js"></script>
-    
-    <script src="https://blog.slowerzs.net/js/bash.min.js"></script>
-    
-    <script src="https://blog.slowerzs.net/js/shell.min.js"></script>
-    
-    <script src="https://blog.slowerzs.net/js/csharp.min.js"></script>
-    
     
 
     <div id="modal" class="modal">
