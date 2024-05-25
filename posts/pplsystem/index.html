@@ -235,7 +235,7 @@ Previously, this fonction was restricted to drivers, or system with debugging en
 </span></span><span class="line"><span class="cl">	 * Domain   : DOMAIN
 </span></span><span class="line"><span class="cl">	 * NTLM     : &lt;NT_HASH&gt;
 </span></span></code></pre></div><p>This method is unlikely to raise any EDR detection, since this does not rely on traditionnal code injection/cross-process memory reads: no handle to <code>lsass.exe</code> is required.</p>
-<p>Credentials will only be retrieved on systems with <em>Credential Guard</em> disabled. (Shoutout to Antonio Cocomazzi to who <a href="https://x.com/splinter_code/status/1785359393246138555">tweeted</a> about this new feature a few weeks ago!)</p>
+<p>Credentials will only be retrieved on systems with <em>Credential Guard</em> disabled. (Shoutout to Antonio Cocomazzi to who also <a href="https://x.com/splinter_code/status/1785359393246138555">tweeted</a> about this new feature a few weeks ago!)</p>
 <h1 id="code-injection">Code injection</h1>
 <p>While the ability to dump <code>lsass.exe</code> is useful on its own, I wanted to see if I could leverage this to gain code execution within a <em>PPL</em> process, ideally running at the highest level, <em>Win-TCB</em>.</p>
 <p>There are several offensive use cases to getting actual code execution within a <em>PPL</em>. The first one, as demonstrated by <a href="https://github.com/realoriginal/angryorchard"><code>angryorchard</code></a>, is the ability to get an arbitrary kernel pointer decrement, if you can inject code into the <code>csrss.exe</code> process, which runs at the <em>PPL-WinTCB</em> level.
