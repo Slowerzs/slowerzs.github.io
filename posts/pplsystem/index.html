@@ -477,7 +477,7 @@ The easiest way would be to change the protection of <code>ntdll!LdrpKnownDllDir
 </span></span><span class="line"><span class="cl">5/20/2024 1:09:55 PM              3 Information      Writing dump file started.
 </span></span></code></pre></div><p>This might also help detect the <a href="https://github.com/y00ga-sec/Forensike">misuse</a> of legitimate RAM acquisition tools for offensive purposes, though I haven&rsquo;t investigated whether these drivers leverage the same kernel API or perform the dump without it.</p>
 <p>In combination, <em>Arbitrary Code Guard</em> and <em>PPL</em> should work well together to prevent code injection, somewhat similarily to <a href="https://connormcgarr.github.io/hvci/"><em>HVCI</em></a>, but due to the limitations of each, they fall short of the goal. In particular, the absence of verification during the mapping is a design flaw that has remained unfixed since the first report about it.
-It be interesting to require <em>PPL</em> processes to be started with <em>Arbitrary Code Guard</em> enabled, but this might have side effects I haven&rsquo;t considered.</p>
+It would be interesting to require <em>PPL</em> processes to be started with <em>Arbitrary Code Guard</em> enabled, but this might have side effects I haven&rsquo;t considered.</p>
 <p>Finally, this method could be leveraged to inject into <em>Protected Process</em> as well, but there seems to be little reason to do so as far as I know.</p>
 
 
