@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title> Decrypting CryptProtectMemory without code injection - Slowerzs&#39; blog </title>
+    <meta name="HandheldFriendly" content="True">
+    <meta name="MobileOptimized" content="320">
+    <meta name="referrer" content="no-referrer">
+    <meta name="description" content="" />
+    <meta property="og:site_name" content="Slowerzs&#39; blog" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://blog.slowerzs.net/posts/cryptdecryptmemory/" />
+    <meta property="og:title" content="Decrypting CryptProtectMemory without code injection" />
+    <meta property="og:image" content="https://blog.slowerzs.net/images/small-favicon.png" />
+    <meta property="og:description" content="" />
+
+    <meta name="twitter:card" content=" summary_large_image" />
+    
+    <meta name="twitter:title" content="Decrypting CryptProtectMemory without code injection" />
+    <meta name="twitter:description" content="" />
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@slowerzs">
+    <meta name="twitter:image" content="https://blog.slowerzs.net/images/small-favicon.png" />
+
+    <link rel="canonical" href="https://blog.slowerzs.net/posts/cryptdecryptmemory/">
+
+    <link rel="stylesheet" href="https://blog.slowerzs.net/css/bootstrap.min.css" />
+
+    <link rel="stylesheet" href="https://blog.slowerzs.net/css/custom.css" />
+    <link rel="stylesheet" href="https://blog.slowerzs.net/css/syntax.css" />
+
+    
+
+    <link rel="shortcut icon"
+        href="https://blog.slowerzs.net/images/favicon.png?">
+
+</head>
+
+<body>
+    <script>
+
+        window.addEventListener('load', function () {
+            hljs.configure({
+                ignoreUnescapedHTML: true
+            })
+            hljs.highlightAll();
+        }, true);
+
+        let darkTheme = localStorage.getItem("darkTheme")
+        if (darkTheme === null) {
+            if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                localStorage.setItem("darkTheme", true);
+                document.getElementById("light-css").setAttribute('disabled', 'true')
+                document.getElementById("dark-css").removeAttribute('disabled')
+            } else {
+                document.documentElement.setAttribute('data-theme', 'light');
+                localStorage.setItem("darkTheme", false);
+                document.getElementById("dark-css").setAttribute('disabled', 'true')
+                document.getElementById("light-css").removeAttribute('disabled')
+            }
+        } else if (darkTheme === "true") {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            document.getElementById("light-css").setAttribute('disabled', 'true')
+            document.getElementById("dark-css").removeAttribute('disabled')
+        } else {
+            document.documentElement.setAttribute('data-theme', 'light');
+            document.getElementById("dark-css").setAttribute('disabled', 'true')
+            document.getElementById("light-css").removeAttribute('disabled')
+        }
+
+        function switchTheme() {
+            let darkTheme = localStorage.getItem("darkTheme");
+            if (darkTheme === null) {
+                darkTheme = window.matchMedia("(prefers-color-scheme: dark)").matches.toString()
+            }
+
+            if (darkTheme === "true") {
+                document.documentElement.setAttribute('data-theme', 'light');
+                localStorage.setItem("darkTheme", false);
+                document.getElementById("dark-css").setAttribute('disabled', 'true')
+                document.getElementById("light-css").removeAttribute('disabled')
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                localStorage.setItem("darkTheme", true);
+                document.getElementById("light-css").setAttribute('disabled', 'true')
+                document.getElementById("dark-css").removeAttribute('disabled')
+            }
+
+        }
+    </script>
+    
+    <div class="mt-xl header">
+    <div class="container">
+        <div>
+            <div class="row justify-content-center">
+                <div class="row">
+                    <a href="https://blog.slowerzs.net/">
+                        <h1 class="name">Slowerzs&#39; blog</h1>
+                    </a>
+                    <img id="switcher" onclick="switchTheme()" src="https://blog.slowerzs.net/images/theme-dark.svg" height="32px" width="32px"
+                        style="position: absolute; left: 93%; transform: translateX(-93%);" />
+                </div>
+            </div>
+
+            <div class="row justify-content-center">
+                <ul class="nav nav-primary">
+                    
+                    <li class="nav-item">
+                        <a class="nav-link" href="https://blog.slowerzs.net/">
+                            
+                            Home
+                        </a>
+                    </li>
+                    
+                    <li class="nav-item">
+                        <a class="nav-link" href="https://github.com/Slowerzs">
+                            
+                            Github
+                        </a>
+                    </li>
+                    
+                    <li class="nav-item">
+                        <a class="nav-link" href="https://twitter.com/slowerzs">
+                            
+                            Twitter
+                        </a>
+                    </li>
+                    
+                    <li class="nav-item">
+                        <a class="nav-link" href="https://blog.slowerzs.net/archive">
+                            
+                            Archive
+                        </a>
+                    </li>
+                    
+                </ul>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+    <div class="content">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-sm-12 col-lg-8">
+                    <h1 class="mx-0 mx-md-4">Decrypting CryptProtectMemory without code injection</h1>
+                    <div class="markdown">
+                        
+    <p><a href="https://learn.microsoft.com/en-us/windows/win32/api/dpapi/nf-dpapi-cryptprotectmemory"><code>CryptProtectMemory</code></a> is a function used to encrypt sensitive memory in an application, without providing any key.
+In particular, this function has a flag, <code>CRYPTPROTECTMEMORY_SAME_PROCESS</code>, which should ensure that the encrypted memory can only be decrypted from within the process where it was encrypted.</p>
+<p>I&rsquo;ve come across this function in multiple contexts, being used both as security mechanism (for instance it is used by <a href="https://keepass.info/help/base/security.html">KeePass or the default RDP client to protect masterkeys in memory</a>), as well as by offensive applications to <a href="https://github.com/Cracked5pider/CodeCave/blob/main/EkkoSys040/EkkoSys040.c">hide payloads in memory</a>.
+For example, this means tools that try to decrypt the masterkey of KeePass, must inject code into the KeePass process.</p>
+<p>All this got me wondering how the encryption worked, and if it was possible to decrypt encrypted blobs without injecting code into the victim process. Let&rsquo;s dive into the implementation !</p>
+<h2 id="finding-the-actual-implementation">Finding the actual implementation</h2>
+<p><code>CryptProtectMemory</code> is exported by<code>dpapi.dll</code>, with the following prototype:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-C" data-lang="C"><span class="line"><span class="cl"><span class="n">DPAPI_IMP</span> <span class="n">BOOL</span> <span class="nf">CryptProtectMemory</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">  <span class="p">[</span><span class="n">in</span><span class="p">,</span> <span class="n">out</span><span class="p">]</span> <span class="n">LPVOID</span> <span class="n">pDataIn</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="p">[</span><span class="n">in</span><span class="p">]</span>      <span class="n">DWORD</span>  <span class="n">cbDataIn</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="p">[</span><span class="n">in</span><span class="p">]</span>      <span class="n">DWORD</span>  <span class="n">dwFlags</span>
+</span></span><span class="line"><span class="cl"><span class="p">);</span>
+</span></span></code></pre></div><p>Decompiling the function, it is just a thin wrapper around <code>cryptbase!SystemFunction040</code>:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-C" data-lang="C"><span class="line"><span class="cl"><span class="n">BOOL</span> <span class="nf">CryptProtectMemory</span><span class="p">(</span><span class="n">LPVOID</span> <span class="n">pDataIn</span><span class="p">,</span><span class="n">dword</span> <span class="n">cbDataIn</span><span class="p">,</span><span class="n">dword</span> <span class="n">dwFlags</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">NTSTATUS</span> <span class="n">status</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">ULONG</span> <span class="n">ErrorCode</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  
+</span></span><span class="line"><span class="cl">  <span class="n">status</span> <span class="o">=</span> <span class="nf">SystemFunction040</span><span class="p">(</span><span class="n">pDataIn</span><span class="p">,</span><span class="n">cbDataIn</span><span class="p">,</span><span class="n">dwFlags</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="p">(</span><span class="n">status</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">ErrorCode</span> <span class="o">=</span> <span class="nf">RtlNtStatusToDosError</span><span class="p">(</span><span class="n">status</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">SetLastError</span><span class="p">(</span><span class="n">ErrorCode</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="n">status</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>Let&rsquo;s see what <code>SystemFunction040</code> does:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-C" data-lang="C"><span class="line"><span class="cl"><span class="n">ULONG</span> <span class="nf">SystemFunction040</span><span class="p">(</span><span class="n">LPVOID</span> <span class="n">pDataIn</span><span class="p">,</span> <span class="n">dword</span> <span class="n">cbDataIn</span><span class="p">,</span> <span class="n">dword</span> <span class="n">dwFlags</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">ULONG</span> <span class="n">IoctlCode</span><span class="p">,</span> <span class="n">status</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">IO_STATUS_BLOCK</span> <span class="n">IoStatusBlock</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  
+</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="p">((</span><span class="n">g_hKsecDD</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">||</span> <span class="nf">EncryptMemoryInitialize</span><span class="p">())</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">switch</span> <span class="p">(</span><span class="n">dwFlags</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line hl"><span class="cl">    <span class="k">case</span> <span class="nl">CRYPTPROTECTMEMORY_SAME_PROCESS</span><span class="p">:</span>
+</span></span><span class="line hl"><span class="cl">      <span class="n">IoctlCode</span> <span class="o">=</span> <span class="mh">0x39000e</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">      <span class="k">break</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">case</span> <span class="nl">CRYPTPROTECTMEMORY_CROSS_PROCESS</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">      <span class="n">IoctlCode</span> <span class="o">=</span> <span class="mh">0x390016</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">      <span class="k">break</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">case</span> <span class="nl">CRYPTPROTECTMEMORY_SAME_LOGON</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">      <span class="n">IoctlCode</span> <span class="o">=</span> <span class="mh">0x39001e</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">      <span class="k">break</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">case</span> <span class="mi">4</span><span class="o">:</span>
+</span></span><span class="line"><span class="cl">      <span class="n">IoctlCode</span> <span class="o">=</span> <span class="mh">0x39007a</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">      <span class="k">break</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">default</span><span class="o">:</span>
+</span></span><span class="line"><span class="cl">      <span class="k">return</span> <span class="n">STATUS_INVALID_PARAMETER</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">status</span> <span class="o">=</span> <span class="nf">NtDeviceIoControlFile</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">      <span class="n">g_hKsecDD</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">      <span class="mi">0</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">      <span class="mi">0</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">      <span class="mi">0</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">      <span class="o">&amp;</span><span class="n">IoStatusBlock</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">      <span class="n">IoctlCode</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">      <span class="n">pDataIn</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">      <span class="n">cbDataIn</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">      <span class="n">pDataIn</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">      <span class="n">cbDataIn</span>
+</span></span><span class="line"><span class="cl">    <span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">status</span> <span class="o">=</span> <span class="n">STATUS_UNSUCCESSFUL</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="n">status</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>Again, the real work is done deeper, the function is simply a wrapper around an ioctl made to the <code>\\Device\\KsecDD</code> device driver (which is opened in <code>EncryptMemoryInitialize</code>).</p>
+<p>Depending on the flags provided to <code>CryptProtectMemory</code>, a different ioctl code will be used. Since the <code>CRYPTPROTECTMEMORY_SAME_PROCESS</code> flag is the one of interest, the corresponding ioctl code is <code>0x39000e</code>.</p>
+<p>Additionally, it is interesting to note that there is an undocumented flag with a value of <code>4</code> and an ioctl code of <code>0x39007a</code>.</p>
+<p>Inside the <code>DriverEntry</code> function of <code>ksecdd.sys</code>, the ioctl handler is registered with a generic function that handles all I/O operations for the driver:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-C" data-lang="C"><span class="line"><span class="cl"><span class="nf">DriverEntry</span><span class="p">(</span><span class="n">PDRIVER_OBJECT</span> <span class="n">DriverObject</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="p">...</span>
+</span></span><span class="line"><span class="cl">  <span class="n">DriverObject</span><span class="o">-&gt;</span><span class="n">MajorFunction</span><span class="p">[</span><span class="n">IRP_MJ_DEVICE_CONTROL</span><span class="p">]</span> <span class="o">=</span> <span class="n">KsecDispatch</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="p">...</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>Then, the control is handed to the function responsible for the ioctl I/O operations:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-C" data-lang="C"><span class="line"><span class="cl"><span class="n">ulonglong</span> <span class="nf">KsecDispatch</span><span class="p">(</span><span class="n">undefined8</span> <span class="n">param_1</span><span class="p">,</span><span class="n">PIRP</span> <span class="n">Irp</span><span class="p">,</span><span class="n">undefined8</span> <span class="n">param_3</span><span class="p">,</span><span class="n">undefined8</span> <span class="n">param_4</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="p">...</span>
+</span></span><span class="line"><span class="cl">  <span class="n">MajorFunction</span> <span class="o">=</span> <span class="n">CurrentStackLocation</span><span class="o">-&gt;</span><span class="n">MajorFunction</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="p">(</span><span class="n">MajorFunction</span> <span class="o">==</span> <span class="n">IRP_MJ_DEVICE_CONTROL</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="p">...</span>
+</span></span><span class="line"><span class="cl">    <span class="n">result</span> <span class="o">=</span> <span class="nf">KsecDeviceControl</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">      <span class="n">Irp</span><span class="o">-&gt;</span><span class="n">AssociatedIrp</span><span class="p">.</span><span class="n">SystemBuffer</span><span class="p">,</span> <span class="n">InputBufferLen</span><span class="p">,</span> <span class="n">OutputBuffer</span><span class="p">,</span> <span class="n">OutputBufferLen</span><span class="p">,</span> <span class="n">IoctlCode</span><span class="p">,</span> <span class="n">Irp</span>
+</span></span><span class="line"><span class="cl">    <span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>As one might expect, <code>KsecDeviceControl</code> calls methods corresponding to the ioctl code. However, there is no special case for <code>0x39000e</code>. If the ioctl code is not among the hardcoded ones, a function pointer from a global array, <code>gKsecDeviceControlExtension</code>, is invoked.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-C" data-lang="C"><span class="line"><span class="cl"><span class="n">status</span> <span class="o">=</span> <span class="p">(</span><span class="o">**</span><span class="n">gKsecpDeviceControlExtension</span><span class="p">)(</span>
+</span></span><span class="line"><span class="cl"><span class="n">InputBuffer</span><span class="p">,</span> <span class="n">InLength</span><span class="p">,</span> <span class="n">OutputBuffer</span><span class="p">,</span> <span class="n">OutputBufferLen</span><span class="p">,</span> <span class="n">IoctlCode</span><span class="p">,</span> <span class="n">IRP</span><span class="o">-&gt;</span><span class="n">RequestorMode</span>
+</span></span><span class="line"><span class="cl"><span class="p">);</span>
+</span></span></code></pre></div><p>I was too lazy to statically find out how this global variable was initialized, so I simply looked in an already initialized example from a memory dump:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-plaintext" data-lang="plaintext"><span class="line"><span class="cl">0: kd&gt; ln poi(poi(ksecdd!gKsecpDeviceControlExtension))
+</span></span><span class="line"><span class="cl">Browse module
+</span></span><span class="line"><span class="cl">Set bu breakpoint
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">(fffff803`0e93e900)   cng!CngDeviceControl   |  (fffff803`0e93ebd8)   cng!VerifyRegistryAccess
+</span></span><span class="line"><span class="cl">Exact matches:
+</span></span><span class="line hl"><span class="cl">    cng!CngDeviceControl (void)
+</span></span></code></pre></div><p>It seems that the driver that will be handling our ioctl is the Windows Kernel Cryptography Driver <code>cng.sys</code>, which makes sense since the operation is related to cryptography.</p>
+<p>Let&rsquo;s review <code>cng!CngDeviceControl</code>. This time, a special case is present for ioctl <code>0x39000e</code>, among others:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-C" data-lang="C"><span class="line"><span class="cl"><span class="k">if</span> <span class="p">((((</span><span class="n">IoctlCode</span> <span class="o">==</span> <span class="mh">0x39000e</span><span class="p">)</span> <span class="o">||</span> <span class="p">(</span><span class="n">IoctlCode</span> <span class="o">==</span> <span class="mh">0x390012</span><span class="p">))</span> <span class="o">||</span> <span class="p">(</span><span class="n">IoctlCode</span> <span class="o">==</span> <span class="mh">0x390016</span><span class="p">))</span> <span class="o">||</span>
+</span></span><span class="line"><span class="cl">    <span class="p">(((</span><span class="n">IoctlCode</span> <span class="o">==</span> <span class="mh">0x39001a</span> <span class="o">||</span> <span class="p">(</span><span class="n">IoctlCode</span> <span class="o">==</span> <span class="mh">0x39001e</span><span class="p">))</span> <span class="o">||</span> <span class="p">(</span><span class="n">IoctlCode</span> <span class="o">==</span> <span class="mh">0x390022</span><span class="p">))))</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl"><span class="p">...</span>
+</span></span><span class="line"><span class="cl">    <span class="n">status</span> <span class="o">=</span> <span class="nf">CngEncryptMemoryEx</span><span class="p">(</span><span class="n">OutputBuffer</span><span class="p">,</span> <span class="o">*</span><span class="n">Length</span><span class="p">,</span> <span class="n">OperationIsEncryption</span><span class="p">,</span> <span class="n">CipherType</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">...</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p><code>CngEncryptMemoryEx</code> is where the real work is done, which includes two flags, one to indicate whether we are encrypting or decrypting the memory, and the other to indicate which cipher to use (this function is also used by other ioctl, for instance when using a flag different than <code>CRYPTPROTECTMEMORY_SAME_PROCESS</code>, or simply when decrypting memory). The value of these two flags depends on the ioctl code. In <code>SystemFunction040</code>, the memory is being encrypted, so <code>OperationIsEncryption</code> is equals to <code>1</code>, and <code>CipherType</code> has a value of <code>0</code>.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-C" data-lang="C"><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">CngEncryptMemoryEx</span><span class="p">(</span><span class="nf">undefined</span> <span class="p">(</span><span class="o">*</span><span class="n">OutputBuffer</span><span class="p">)</span> <span class="p">[</span><span class="mi">16</span><span class="p">],</span><span class="n">uint</span> <span class="n">Length</span><span class="p">,</span><span class="kt">int</span> <span class="n">OperationIsEncryption</span><span class="p">,</span> <span class="kt">int</span> <span class="n">OperationType</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl"><span class="p">...</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">((</span><span class="n">Length</span> <span class="o">&amp;</span> <span class="mh">0xf</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">UseAES</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">UseAES</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">else</span> <span class="k">if</span> <span class="p">((</span><span class="n">Length</span> <span class="o">&amp;</span> <span class="mi">7</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">LogError</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">...</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">TypeOfOperation</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">Cookie</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line hl"><span class="cl">        <span class="n">status</span> <span class="o">=</span> <span class="nf">ZwQueryInformationProcess</span><span class="p">(</span><span class="nf">GetCurrentProcess</span><span class="p">(),</span> <span class="mh">0x24</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">Cookie</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="p">(</span><span class="n">status</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="nf">DebugTraceError</span><span class="p">(</span><span class="n">status</span><span class="p">,</span><span class="s">&#34;Status&#34;</span><span class="p">,</span> <span class="s">&#34;onecore</span><span class="se">\\</span><span class="s">ds</span><span class="se">\\</span><span class="s">security</span><span class="se">\\</span><span class="s">cryptoapi</span><span class="se">\\</span><span class="s">ncrypt</span><span class="se">\\</span><span class="s">crypt</span><span class="se">\\</span><span class="s">kernel</span><span class="se">\\</span><span class="s">encmem.cxx&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">            <span class="k">goto</span> <span class="n">error</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="n">CurrentEprocess</span> <span class="o">=</span> <span class="nf">PsGetCurrentProcess</span><span class="p">();</span>
+</span></span><span class="line hl"><span class="cl">        <span class="n">CurrentProcessCreateTime</span> <span class="o">=</span> <span class="nf">PsGetProcessCreateTimeQuadPart</span><span class="p">(</span><span class="n">CurrentEprocess</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">	
+</span></span><span class="line"><span class="cl">        <span class="n">KeyData</span><span class="p">.</span><span class="n">Cookie</span> <span class="o">=</span> <span class="n">Cookie</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">KeyData</span><span class="p">.</span><span class="n">CreateTime</span> <span class="o">=</span> <span class="n">CurrentProcessCreateTime</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line hl"><span class="cl">        <span class="n">Iv</span> <span class="o">=</span> <span class="n">RandomSalt</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="p">(</span><span class="n">UseAES</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line hl"><span class="cl">            <span class="nf">GenerateAESKey</span><span class="p">(</span><span class="n">aesKey</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">KeyData</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">KeyData</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="p">(</span><span class="n">OperationIsEncryption</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="nf">SymCryptAesCbcDecrypt</span><span class="p">(</span><span class="n">AesKey</span><span class="p">,</span> <span class="n">Iv</span><span class="p">,</span> <span class="n">OutputBuffer</span><span class="p">,</span> <span class="n">OutputBuffer</span><span class="p">,</span> <span class="n">BufferLength</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line hl"><span class="cl">                <span class="nf">SymCryptAesCbcEncrypt</span><span class="p">(</span><span class="n">AesKey</span><span class="p">,</span> <span class="n">Iv</span><span class="p">,</span> <span class="n">OutputBuffer</span><span class="p">,</span> <span class="n">OutputBuffer</span><span class="p">,</span> <span class="n">BufferLength</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line hl"><span class="cl">            <span class="nf">GenerateKey</span><span class="p">(</span><span class="n">DesKey</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">KeyData</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">KeyData</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="p">(</span><span class="n">OperationIsEncryption</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="nf">SymCryptCbcDecrypt</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">SymCrypt3DesBlockCipher_default</span><span class="p">,</span> <span class="n">DesKey</span><span class="p">,</span> <span class="n">Iv</span><span class="p">,</span> <span class="n">OutputBuffer</span><span class="p">,</span> <span class="n">OutputBuffer</span><span class="p">,</span> <span class="n">BufferLength</span>
+</span></span><span class="line"><span class="cl">                <span class="p">);</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line hl"><span class="cl">                <span class="nf">SymCryptCbcEncrypt</span><span class="p">(</span>
+</span></span><span class="line hl"><span class="cl">                    <span class="n">SymCrypt3DesBlockCipher_default</span><span class="p">,</span> <span class="n">desKey</span><span class="p">,</span> <span class="n">Iv</span><span class="p">,</span> <span class="n">OutputBuffer</span><span class="p">,</span> <span class="n">OutputBuffer</span><span class="p">,</span> <span class="n">BufferLength</span>
+</span></span><span class="line hl"><span class="cl">                <span class="p">);</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>This is where the actual encryption happens. Something interesting to note is that although the <a href="https://learn.microsoft.com/en-us/windows/win32/api/dpapi/nf-dpapi-cryptprotectmemory#parameters">documentation</a> states that <code>The number of bytes must be a multiple of the CRYPTPROTECTMEMORY_BLOCK_SIZE constant</code>, which is equal to <code>0x10</code>, however, if the length is only a multiple of <code>8</code>, it is still accepted (probably for backward compatibility). If that&rsquo;s the case, the cipher used will be different.</p>
+<p>If the length is a multiple of <code>CRYPTPROTECTMEMORY_BLOCK_SIZE</code>, <code>AES128</code> will be used, else, it will be <code>3DES</code>. This makes sense as the block size of <code>AES128</code> is <code>0x10</code> bytes, and <code>8</code> bytes for <code>3DES</code>. The library used for encryption is <a href="https://github.com/microsoft/SymCrypt">SymCrypt</a>, an open-source library. Both ciphers use the CBC mode of operation.</p>
+<p>In both cases, the initialization vector used by the CBC mode is a global variable, <code>cng!RandomSalt</code> (but only half of the data is used with <code>3DES</code> since the block size is only <code>64</code> bits).</p>
+<p>Depending on the cipher, the key is generated using the <code>GenerateAESKey</code> and <code>GenerateKey</code>, for <code>AES</code> and <code>3DES</code>, respectively. In both cases, a struct containing both the process creation time and the process <code>Cookie</code> (a randomly generated value stored in the <code>EPROCESS</code> structure associated with the current process) is given as an argument.</p>
+<p>Now, the only thing missing, to fully understand the encryption process, is to find out how symmetric keys are derived from those two values.</p>
+<p>Let&rsquo;s start with <code>GenerateAESKey</code>:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-C" data-lang="C"><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">GenerateAESKey</span><span class="p">(</span><span class="n">_SYMCRYPT_AES_EXPANDED_KEY</span> <span class="o">*</span><span class="n">ResultAesKey</span><span class="p">,</span> <span class="n">KeyInput</span> <span class="o">*</span><span class="n">KeyData</span><span class="p">,</span><span class="n">ulong</span> <span class="n">DataLength</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">memcpy</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ShaState</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">g_ShaHash</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">SYMCRYPT_SHA1_STATE</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">SymCryptSha1Append</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ShaState</span><span class="p">,</span> <span class="n">KeyData</span><span class="p">,</span> <span class="n">DataLength</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">SymCryptSha1Result</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ShaState</span><span class="p">,</span> <span class="n">ShaHash</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">SymCryptAesExpandKeyInternal</span><span class="p">(</span><span class="n">ResultAesKey</span><span class="p">,</span> <span class="n">ShaHash</span><span class="p">,</span> <span class="mh">0x10</span><span class="p">,</span> <span class="sc">&#39;\x01&#39;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>This is fairly straightforward. The internal state of a global variable <code>g_ShaHash</code> is copied to a local variable, then the state of the <code>SHA</code> hash is update with the <code>12</code> bytes of the <code>Cookie</code> and the <code>CreateTime</code> fields of the associated process. Finally, the <code>SHA1</code> hash is finalized, and the first <code>0x10</code> bytes of the hash are used as the symmetric key for <code>AES</code> (<code>SHA1</code> hashes are <code>0x14</code> bytes long).</p>
+<p><code>g_ShaHash</code> is initialized once per boot in <code>cng!CngEncryptMemoryInitialize</code>, and remains the same afterward.</p>
+<p>Now, let&rsquo;s take a look at <code>GenerateKey</code>:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-C" data-lang="C"><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">GenerateKey</span><span class="p">(</span><span class="n">_SYMCRYPT_3DES_EXPANDED_KEY</span> <span class="o">*</span><span class="n">DesKey</span><span class="p">,</span> <span class="n">KeyInput</span> <span class="o">*</span><span class="n">Data</span><span class="p">,</span> <span class="n">ulong</span> <span class="n">DataLen</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">BYTE</span> <span class="n">ShaHashes</span><span class="p">[</span><span class="mh">0x28</span><span class="p">];</span> <span class="c1">// Holds two SHA1 hashes
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl">    <span class="nf">memcpy</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ShaState1</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">g_ShaHash</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">SYMCRYPT_SHA1_STATE</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">SymCryptSha1Append</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ShaState1</span><span class="p">,</span> <span class="s">&#34;aaa&#34;</span><span class="p">,</span> <span class="mi">3</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">SymCryptSha1Append</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ShaState1</span><span class="p">,</span> <span class="n">Data</span><span class="p">,</span> <span class="n">DataLen</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">SymCryptSha1Result</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ShaState1</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">ShaHashes</span><span class="p">[</span><span class="mi">0</span><span class="p">]);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nf">memcpy</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ShaState2</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">g_ShaHash</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">SYMCRYPT_SHA1_STATE</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">SymCryptSha1Append</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ShaState2</span><span class="p">,</span> <span class="s">&#34;bbb&#34;</span><span class="p">,</span> <span class="mi">3</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">SymCryptSha1Append</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ShaState2</span><span class="p">,</span> <span class="n">Data</span><span class="p">,</span> <span class="n">DataLen</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">SymCryptSha1Result</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ShaState2</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">ShaHashes</span><span class="p">[</span><span class="mh">0x14</span><span class="p">]);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nf">SymCrypt3DesExpandKey</span><span class="p">(</span><span class="n">DesKey</span><span class="p">,</span> <span class="n">ShaHashes</span><span class="p">,</span> <span class="mh">0x18</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>This is slightly different, since a <code>3DES</code> key is <code>0x18</code> bytes long, a single <code>SHA1</code> hash is not enough. In order to get enough bytes, two hashes are calculated, once again starting from the initial of <code>g_ShaHash</code>. To get different values, the hashes are updated with <code>b&quot;aaa&quot;</code> and <code>b&quot;bbb&quot;</code>. Finally, the hashes are updated with both the <code>Cookie</code> and <code>CreateTime</code> values.</p>
+<p>The resulting <code>3DES</code> key is the concatenation of all bytes from the first <code>SHA1</code> hash with the four first bytes of the second hash.</p>
+<h2 id="the-other-flags">The other flags</h2>
+<p>I won&rsquo;t dive as deep on the other flags, but I&rsquo;ll provide a quick overview:</p>
+<ul>
+<li>Instead of the process cookie and creation time, <code>CRYPTPROTECTMEMORY_SAME_LOGON</code> uses <code>SeQueryAuthenticationIdToken</code> to get the <code>LUID</code> of the current logon session, to use as an input to derive the AES/DES Key.</li>
+<li><code>CRYPTPROTECTMEMORY_CROSS_PROCESS</code> uses the value of <code>cng!g_AESKey</code> to derive the AES/DES key, which is initialized with random data once per boot.</li>
+<li>Finally, the undocumented flag behaves differently depending of whether the application is encrypting or decrypting memory. If the application is encrypting memory, the blob is encrypted with a key derived from a hardcoded <code>LUID</code> with a value of <code>0x3E2</code>, which according to <a href="https://codemachine.com/downloads/win10.1809/ntifs.h">online resources</a> corresponds to the <code>PROTECTED_TO_SYSTEM_LUID</code> logon session. However, decryption is only permitted if the current logon session matches <code>0x3E7</code>, a well-known LUID for the <code>SYSTEM</code> logon session.</li>
+</ul>
+<p>I haven&rsquo;t seen any use of the undocumented flag, but this could be an interesting topic for further research.</p>
+<h2 id="decrypting-protected-memory">Decrypting protected memory</h2>
+<p>To summarize, to decrypt memory that was protected with <code>CryptProtectMemory</code> and the <code>CRYPTPROTECTMEMORY_SAME_PROCESS</code> flag in another process, one must:</p>
+<ul>
+<li>Get the encrypted data, and its length in the target process</li>
+<li>Get the value of the <code>Cookie</code> and <code>CreateTime</code> value in the <code>EPROCESS</code> structure of the target process</li>
+<li>Get the value of <code>cng!RandomSalt</code> and <code>cng!g_ShaHash</code>
+<ul>
+<li>If the length of the encrypted data is a multiple of <code>8</code>, then
+<ul>
+<li>derive a <code>3DES</code> key from two <code>SHA1</code> hashes, starting with an initial state of <code>g_ShaHash</code></li>
+<li>the first one with the state updated with <code>b&quot;aaa&quot;</code> and then updated with the <code>Cookie</code> and <code>CreateTime</code>, taken in full</li>
+<li>the second one with the state updated with <code>b&quot;bbb&quot;</code> and then updated with the <code>Cookie</code> and <code>CreateTime</code>, truncated to the first <code>4</code> bytes</li>
+</ul>
+</li>
+<li>Else, if the length of the encrypted data is a multiple of <code>16</code>, then
+<ul>
+<li>derive an <code>AES128</code> key from the <code>SHA1</code> hash starting with an initial state of <code>g_ShaHash</code>, and updated with <code>Cookie</code> and <code>CreateTime</code>, truncated to the first <code>16</code> bytes.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Finally, decrypt the memory using the corresponding key and cipher, as well as an IV of <code>cng!RandomSalt</code>, all <code>16</code> bytes for <code>AES128</code>, or the first <code>8</code> bytes for <code>3DES</code>.</li>
+</ul>
+<p>This seems pretty easy for a driver to do, but what about a userland application ? The <code>Cookie</code>, <code>CreateTime</code>, <code>g_ShaHash</code>, and <code>RandomSalt</code> are all stored in kernel memory.</p>
+<h2 id="decrypting-from-usermode">Decrypting from usermode</h2>
+<p>Remembering my <a href="https://blog.slowerzs.net/posts/pplsystem/">previous post</a>, the <code>NtSystemDebugControl</code> syscall can be called by a user holding the <code>SeDebugPrivilege</code> to generate a kernel livedump. This can be used to parse kernel memory, and find all the elements required!</p>
+<p>Additionally, on up-to-date Windows 11 or 2025 Server, the <code>IncludeUserSpaceMemoryPages</code> flag can be specified, to also be able to read the encrypted memory in the target process, without ever opening a <code>HANDLE</code> to the target process.</p>
+<p>I wrote a proof of concept tool to decrypt protected data. It is available on <a href="https://github.com/Slowerzs/CryptDecryptMemory">Github</a>.</p>
+<p>This could be extended to retrieve credentials from sensitive applications, such as <code>KeePass</code> or <code>mstsc.exe</code>.</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>The availability of the <code>NtSystemDebugControl</code> provides privileged users a view of kernel memory, which holds various secrets. While not as powerful as <a href="https://github.com/scrt/KexecDDPlus">other</a> <a href="https://github.com/realoriginal/angryorchard">techniques</a>, this confirms once again that admin-to-kernel (even read-only) techniques can be very interesting from an offensive point of view !</p>
+</br>
+<h3 id="related-work">Related work</h3>
+<ul>
+<li>A <a href="https://github.com/eleemosynator/writeups/blob/master/flare-on-6/12%20-%20help/readme.md">similar analysis</a> of <code>CryptProtectMemory</code> on older Windows versions by <a href="https://infosec.exchange/@eleemosynator">@eleemosynator</a></li>
+</ul>
+
+
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+
+
+    
+
+    
+
+    <div id="modal" class="modal">
+        <img id="modal-content" class="modal-content">
+    </div>
+    <script>
+
+        if (typeof screen.orientation !== 'undefined') {
+            
+            var modal = document.getElementById('modal');
+
+            modal.addEventListener('click', function (e) {
+                if (e.target === e.currentTarget) {
+                    modal.style.display = "none";
+                    document.body.style.overflowY = "visible"
+                }
+            });
+            document.addEventListener('keydown', function (e) {
+                if (e.key === "Escape") {
+                    modal.style.display = "none";
+                    document.body.style.overflowY = "visible"
+                }
+            })
+
+            document.addEventListener('click', function (e) {
+                if (e.target.parentElement.parentElement.className.indexOf('figure') !== -1) {
+                    var img = e.target;
+                    var modalImg = document.getElementById("modal-content");
+                    document.body.style.overflowY = "hidden"
+                    modal.style.display = "flex";
+                    modalImg.src = img.src;
+                }
+            });
+
+        }
+
+
+    </script>
+
+    
+
+</body>
+
+</html>

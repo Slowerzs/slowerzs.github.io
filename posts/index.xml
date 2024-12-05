@@ -6,21 +6,36 @@
     <description>Recent content in Posts on Slowerzs&#39; blog</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
-    <lastBuildDate>Wed, 22 May 2024 19:36:10 +0200</lastBuildDate>
-    <atom:link href="https://blog.slowerzs.net/posts/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Mon, 11 Nov 2024 12:10:31 +0100</lastBuildDate><atom:link href="https://blog.slowerzs.net/posts/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Decrypting CryptProtectMemory without code injection</title>
+      <link>https://blog.slowerzs.net/posts/cryptdecryptmemory/</link>
+      <pubDate>Mon, 11 Nov 2024 12:10:31 +0100</pubDate>
+      
+      <guid>https://blog.slowerzs.net/posts/cryptdecryptmemory/</guid>
+      <description>CryptProtectMemory is a function used to encrypt sensitive memory in an application, without providing any key. In particular, this function has a flag, CRYPTPROTECTMEMORY_SAME_PROCESS, which should ensure that the encrypted memory can only be decrypted from within the process where it was encrypted.
+I&amp;rsquo;ve come across this function in multiple contexts, being used both as security mechanism (for instance it is used by KeePass or the default RDP client to protect masterkeys in memory), as well as by offensive applications to hide payloads in memory.</description>
+    </item>
+    
     <item>
       <title>Injecting code into PPL processes without vulnerable drivers on Windows 11</title>
       <link>https://blog.slowerzs.net/posts/pplsystem/</link>
       <pubDate>Wed, 22 May 2024 19:36:10 +0200</pubDate>
+      
       <guid>https://blog.slowerzs.net/posts/pplsystem/</guid>
-      <description>While reading this article from James Forshaw on leveraging COM to inject code into a process, I discovered a syscall that I didn&amp;rsquo;t known about: NtSystemDebugControl.&#xA;Being unfamiliar with this syscall, I decided to look for more information. I found this PowerShell snippet, which worked well to dump kernel-mode memory. Looking for more, I found that the Flags argument was an enum that contained a IncludeUserSpaceMemoryPages. As the name suggests, if this flag is specified, the memory dump will include user-mode pages that are not swapped out.</description>
+      <description>While reading this article from James Forshaw on leveraging COM to inject code into a process, I discovered a syscall that I didn&amp;rsquo;t known about: NtSystemDebugControl.
+Being unfamiliar with this syscall, I decided to look for more information. I found this PowerShell snippet, which worked well to dump kernel-mode memory. Looking for more, I found that the Flags argument was an enum that contained a IncludeUserSpaceMemoryPages. As the name suggests, if this flag is specified, the memory dump will include user-mode pages that are not swapped out.</description>
     </item>
+    
     <item>
       <title>ThievingFox - Remotely retrieving credentials from password managers and Windows utilities</title>
       <link>https://blog.slowerzs.net/posts/thievingfox/</link>
       <pubDate>Sun, 21 Jan 2024 16:26:38 +0100</pubDate>
+      
       <guid>https://blog.slowerzs.net/posts/thievingfox/</guid>
-      <description>ThievingFox is a collection of post-exploitation tools, used to gather credentials from workstations and servers in the context of penetration tests and similar engagements. It works by making the target application load a malicious library, which performs in-memory hooking to gather credentials.&#xA;During pentests, I&amp;rsquo;ve had great successes using KeeThief and mimikatz&amp;rsquo;s ts::mstsc module to gather additional credentials from KeePass and the default RDP client on Windows, on compromised admin workstations.</description>
+      <description>ThievingFox is a collection of post-exploitation tools, used to gather credentials from workstations and servers in the context of penetration tests and similar engagements. It works by making the target application load a malicious library, which performs in-memory hooking to gather credentials.
+During pentests, I&amp;rsquo;ve had great successes using KeeThief and mimikatz&amp;rsquo;s ts::mstsc module to gather additional credentials from KeePass and the default RDP client on Windows, on compromised admin workstations.</description>
     </item>
+    
   </channel>
 </rss>

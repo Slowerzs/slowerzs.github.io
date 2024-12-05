@@ -153,7 +153,7 @@
                         
     <p>I am writing this series of articles to explain, and learn along the way, how the Linux kernel works (some parts of it at least).
 I find it difficult to find a place to start to learn how the kernel works, so I will be taking apart different functionnalities, in order to gain insight on how it works :D</p>
-<p>I am by no means an expert, so feel free to reach out to correct anything incorrect or imcomplete!</p>
+<p>I am by no means an expert, so feel free to reach out to correct anything incorrect or incomplete!</p>
 <p>I will be focusing on the <a href="https://elixir.bootlin.com/linux/v5.14.14/source">5.14.14</a>, the latest at the time of writing, and on the x86_64 architecture.</p>
 <h2 id="syscalls">Syscalls</h2>
 <p>Learning low level programming, the first time I encountered the kernel was when I learned about the <code>syscall</code> instruction. This instruction, is a blackbox for userland programs, you setup some registers properly, issue the instruction, and magically, your program has been modified accordingly to what the syscall does. But how does it work behind the scenes ?</p>
