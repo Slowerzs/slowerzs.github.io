@@ -6,7 +6,16 @@
     <description>Recent content in Posts on Slowerzs&#39; blog</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
-    <lastBuildDate>Mon, 11 Nov 2024 12:10:31 +0100</lastBuildDate><atom:link href="https://blog.slowerzs.net/posts/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Wed, 19 Mar 2025 18:04:08 +0100</lastBuildDate><atom:link href="https://blog.slowerzs.net/posts/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Code reuse in the age of kCET and HVCI</title>
+      <link>https://blog.slowerzs.net/posts/keyjumper/</link>
+      <pubDate>Wed, 19 Mar 2025 18:04:08 +0100</pubDate>
+      
+      <guid>https://blog.slowerzs.net/posts/keyjumper/</guid>
+      <description>With the recent evolutions of the Windows kernel, multiple mitigations and hardenings have been created, to prevent arbitrary kernel code execution. First, HVCI ensures at the hypervisor level that only signed drivers can be loaded within the kernel. To prevent the allocation of new executable pages, Extended Page Tables are used - new executable pages can only be allocated with support of the hypervisor, and that requires some form of code signature.</description>
+    </item>
+    
     <item>
       <title>Decrypting CryptProtectMemory without code injection</title>
       <link>https://blog.slowerzs.net/posts/cryptdecryptmemory/</link>

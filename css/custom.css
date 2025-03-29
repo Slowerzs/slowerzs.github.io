@@ -492,6 +492,18 @@ td:last-child {
     --chroma-string-litteral: #b5bd68;
     --chroma-name-function: #f08d49;
     --chroma-litteral-number: #ae81ff;
+    --details-colors: #333;
+}
+.markdown > details > summary {
+    background-color: var(--code-background-color);
+    padding-top: 0.2rem;
+    padding-bottom: 0.2rem;
+    padding-left: 0.2rem;
+    margin-left: 1.5rem;
+    margin-right: 1.5rem;
+    margin-bottom: 1rem;
+    border-radius: 6px;
+    border: 1px;
 }
 
 .content .markdown {
