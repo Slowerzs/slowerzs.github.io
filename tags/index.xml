@@ -5,6 +5,7 @@
     <link>https://blog.slowerzs.net/tags/</link>
     <description>Recent content in Tags on Slowerzs&#39; blog</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en</language><atom:link href="https://blog.slowerzs.net/tags/index.xml" rel="self" type="application/rss+xml" />
+    <language>en</language>
+    <atom:link href="https://blog.slowerzs.net/tags/index.xml" rel="self" type="application/rss+xml" />
   </channel>
 </rss>

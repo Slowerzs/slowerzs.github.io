@@ -243,36 +243,10 @@ I filtered the results to only keep functions where the instruction pointer depe
 </span></span></code></pre></div></div>
 </details>
 
-<p><code>SdbpCheckDll</code> writes 0 to the value pointed by the 7th argument, as long as it points to an address above the stack pointer. Then, the function jumps to a value controlled by the 6th argument without kCFG check:</p>
-<details>
-    <summary>SdbpCheckDll</summary>
-    <div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-nasm" data-lang="nasm"><span class="line"><span class="cl"><span class="nf">mov</span>        <span class="nb">rsi</span><span class="p">,</span> <span class="kt">qword</span> <span class="nv">ptr</span> <span class="p">[</span><span class="nb">rsp</span> <span class="o">+</span> <span class="mh">0x30</span><span class="p">]</span>
-</span></span><span class="line"><span class="cl"><span class="nf">mov</span>        <span class="nb">rdi</span><span class="p">,</span> <span class="kt">qword</span> <span class="nv">ptr</span> <span class="p">[</span><span class="nb">rsp</span> <span class="o">+</span> <span class="mh">0x28</span><span class="p">]</span>
-</span></span><span class="line"><span class="cl"><span class="nf">mov</span>        <span class="nv">r10</span><span class="p">,</span> <span class="kt">qword</span> <span class="nv">ptr</span> <span class="p">[</span><span class="nb">rsp</span> <span class="o">+</span> <span class="mh">0x38</span><span class="p">]</span>
-</span></span><span class="line"><span class="cl"><span class="nf">xor</span>        <span class="nb">eax</span><span class="p">,</span> <span class="nb">eax</span>
-</span></span><span class="line"><span class="cl"><span class="nl">loop_start:</span>
-</span></span><span class="line"><span class="cl"><span class="nf">mov</span>        <span class="kt">qword</span> <span class="nv">ptr</span> <span class="p">[</span><span class="nv">r10</span><span class="p">],</span><span class="nb">rax</span>
-</span></span><span class="line"><span class="cl"><span class="nf">sub</span>        <span class="nv">r10</span><span class="p">,</span> <span class="mh">0x8</span>
-</span></span><span class="line"><span class="cl"><span class="nf">cmp</span>        <span class="nv">r10</span><span class="p">,</span> <span class="nb">rsp</span>
-</span></span><span class="line"><span class="cl"><span class="nf">jnc</span>        <span class="nv">loop_start</span>
-</span></span><span class="line"><span class="cl"><span class="nf">mov</span>        <span class="kt">qword</span> <span class="nv">ptr</span> <span class="p">[</span><span class="nb">rsp</span> <span class="o">+</span> <span class="mh">0x28</span><span class="p">],</span> <span class="nb">rdi</span>
-</span></span><span class="line"><span class="cl"><span class="nf">mov</span>        <span class="nb">ebx</span><span class="p">,</span> <span class="nb">eax</span>
-</span></span><span class="line"><span class="cl"><span class="nf">mov</span>        <span class="nb">edi</span><span class="p">,</span> <span class="nb">eax</span>
-</span></span><span class="line"><span class="cl"><span class="nf">mov</span>        <span class="nb">ebp</span><span class="p">,</span> <span class="nb">eax</span>
-</span></span><span class="line"><span class="cl"><span class="nf">mov</span>        <span class="nv">r10</span><span class="p">,</span> <span class="nb">rax</span>
-</span></span><span class="line"><span class="cl"><span class="nf">mov</span>        <span class="nv">r11</span><span class="p">,</span> <span class="nb">rax</span>
-</span></span><span class="line"><span class="cl"><span class="nf">mov</span>        <span class="nv">r12</span><span class="p">,</span> <span class="nb">rax</span>
-</span></span><span class="line"><span class="cl"><span class="nf">mov</span>        <span class="nv">r13</span><span class="p">,</span> <span class="nb">rax</span>
-</span></span><span class="line"><span class="cl"><span class="nf">mov</span>        <span class="nv">r14</span><span class="p">,</span> <span class="nb">rax</span>
-</span></span><span class="line"><span class="cl"><span class="nf">mov</span>        <span class="nv">r15</span><span class="p">,</span> <span class="nb">rax</span>
-</span></span><span class="line"><span class="cl"><span class="nf">jmp</span>        <span class="nb">rsi</span>
-</span></span></code></pre></div></div>
-</details>
-
-<p>Despite having very different names, <code>KiDpcDispatch</code>, <code>SdbpCheckDll</code>, and <code>RtlLookupFunctionEntryEx</code> have something in common: they are all Patchguard functions with intentionally confusing names! :)</p>
+<p>Despite having very different names, <code>KiDpcDispatch</code>, and <code>RtlLookupFunctionEntryEx</code> have something in common: they are all Patchguard functions with intentionally confusing names! :)</p>
 <p><code>KiDpcDispatch</code> is not suitable for our needs, since it requires RWX memory (in the last 3 instructions).</p>
 <p><code>RtlLookupFunctionEntryEx</code> could work, but would require carefully calculating the value in the 1st argument, so that the write operation ends up writing to writeable memory.</p>
-<p>Finally <code>RtlpExecuteHandlerForException</code> and <code>SdbpCheckDll</code> both redirect the control flow to the 6th parameter, with a <code>call</code> for <code>RtlpExecuteHandlerForException</code>. This can also work, depending on the primitive you have.</p>
+<p>Finally <code>RtlpExecuteHandlerForException</code> redirects the control flow to the 6th parameter, with a <code>call</code> instruction. This can also work, depending on the primitive you have.</p>
 <p>Overall, I think symbolic execution has a lot of potential to identify interesting functions to get around kCFG, even without much knowledge on the topic, I was quickly able to find valid candidates.
 My implementation was also very limited, if the function had an immediate call, the symbolic execution would stop and not recursively execute the function called - and I still had multiple candidates.</p>
 <h3 id="longjmp">longjmp</h3>
