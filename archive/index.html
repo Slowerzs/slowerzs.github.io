@@ -42,34 +42,19 @@
 <body>
     <script>
 
-        window.addEventListener('load', function () {
-            hljs.configure({
-                ignoreUnescapedHTML: true
-            })
-            hljs.highlightAll();
-        }, true);
-
         let darkTheme = localStorage.getItem("darkTheme")
         if (darkTheme === null) {
             if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
                 document.documentElement.setAttribute('data-theme', 'dark');
                 localStorage.setItem("darkTheme", true);
-                document.getElementById("light-css").setAttribute('disabled', 'true')
-                document.getElementById("dark-css").removeAttribute('disabled')
             } else {
                 document.documentElement.setAttribute('data-theme', 'light');
                 localStorage.setItem("darkTheme", false);
-                document.getElementById("dark-css").setAttribute('disabled', 'true')
-                document.getElementById("light-css").removeAttribute('disabled')
             }
         } else if (darkTheme === "true") {
             document.documentElement.setAttribute('data-theme', 'dark');
-            document.getElementById("light-css").setAttribute('disabled', 'true')
-            document.getElementById("dark-css").removeAttribute('disabled')
         } else {
             document.documentElement.setAttribute('data-theme', 'light');
-            document.getElementById("dark-css").setAttribute('disabled', 'true')
-            document.getElementById("light-css").removeAttribute('disabled')
         }
 
         function switchTheme() {
@@ -81,13 +66,9 @@
             if (darkTheme === "true") {
                 document.documentElement.setAttribute('data-theme', 'light');
                 localStorage.setItem("darkTheme", false);
-                document.getElementById("dark-css").setAttribute('disabled', 'true')
-                document.getElementById("light-css").removeAttribute('disabled')
             } else {
                 document.documentElement.setAttribute('data-theme', 'dark');
                 localStorage.setItem("darkTheme", true);
-                document.getElementById("light-css").setAttribute('disabled', 'true')
-                document.getElementById("dark-css").removeAttribute('disabled')
             }
 
         }
@@ -127,6 +108,20 @@
                         <a class="nav-link" href="https://twitter.com/slowerzs">
                             
                             Twitter
+                        </a>
+                    </li>
+                    
+                    <li class="nav-item">
+                        <a class="nav-link" href="https://bsky.app/profile/slowerzs.net">
+                            
+                            Bluesky
+                        </a>
+                    </li>
+                    
+                    <li class="nav-item">
+                        <a class="nav-link" href="https://blog.slowerzs.net/posts/index.xml">
+                            
+                            RSS
                         </a>
                     </li>
                     

@@ -4,7 +4,7 @@
     <title>Archives on Slowerzs&#39; blog</title>
     <link>https://blog.slowerzs.net/archive/</link>
     <description>Recent content in Archives on Slowerzs&#39; blog</description>
-    <generator>Hugo -- gohugo.io</generator>
+    <generator>Hugo</generator>
     <language>en</language>
     <lastBuildDate>Tue, 26 Oct 2021 15:47:48 +0200</lastBuildDate>
     <atom:link href="https://blog.slowerzs.net/archive/index.xml" rel="self" type="application/rss+xml" />
@@ -13,35 +13,35 @@
       <link>https://blog.slowerzs.net/archive/linux-kernel-syscalls/</link>
       <pubDate>Tue, 26 Oct 2021 15:47:48 +0200</pubDate>
       <guid>https://blog.slowerzs.net/archive/linux-kernel-syscalls/</guid>
-      <description>I am writing this series of articles to explain, and learn along the way, how the Linux kernel works (some parts of it at least). I find it difficult to find a place to start to learn how the kernel works, so I will be taking apart different functionnalities, in order to gain insight on how it works :D&#xA;I am by no means an expert, so feel free to reach out to correct anything incorrect or incomplete!</description>
+      <description>&lt;p&gt;I am writing this series of articles to explain, and learn along the way, how the Linux kernel works (some parts of it at least).&#xA;I find it difficult to find a place to start to learn how the kernel works, so I will be taking apart different functionnalities, in order to gain insight on how it works :D&lt;/p&gt;&#xA;&lt;p&gt;I am by no means an expert, so feel free to reach out to correct anything incorrect or incomplete!&lt;/p&gt;</description>
     </item>
     <item>
       <title>THCon 2021 - Inception</title>
       <link>https://blog.slowerzs.net/archive/thcon-2021-inception/</link>
       <pubDate>Tue, 15 Jun 2021 15:11:48 +0200</pubDate>
       <guid>https://blog.slowerzs.net/archive/thcon-2021-inception/</guid>
-      <description>Inception Inception was a binary exploitation challenge, created by Voydstack. It was a heap challenge, involving Seccomp.&#xA;Discovery We are given the binary, the libc, as well as the path to the flag, /home/user/flag.txt. The version of the libc is 2.27.&#xA;Playing with the binary, it looks like a typical heap exploitation challenge : we can create dreams of any size lesser than 0x800 bytes, edit dreams, show their content, as well as delete them.</description>
+      <description>&lt;h1 id=&#34;inception&#34;&gt;Inception&lt;/h1&gt;&#xA;&lt;p&gt;Inception was a binary exploitation challenge, created by &lt;a href=&#34;https://twitter.com/voydstack&#34;&gt;Voydstack&lt;/a&gt;. It was a heap challenge, involving Seccomp.&lt;/p&gt;&#xA;&lt;h2 id=&#34;discovery&#34;&gt;Discovery&lt;/h2&gt;&#xA;&lt;p&gt;We are given the binary, the libc, as well as the path to the flag, &lt;code&gt;/home/user/flag.txt&lt;/code&gt;. The version of the libc is 2.27.&lt;/p&gt;&#xA;&lt;p&gt;Playing with the binary, it looks like a typical heap exploitation challenge : we can create &lt;code&gt;dreams&lt;/code&gt; of any size lesser than 0x800 bytes, edit &lt;code&gt;dreams&lt;/code&gt;, show their content, as well as delete them. Creating and deleting &lt;code&gt;dreams&lt;/code&gt; is allocating and freeing chunks respectively.&#xA;Dreams are identified by an index.&lt;/p&gt;</description>
     </item>
     <item>
       <title>FCSC 2021 - ShuffleMe</title>
       <link>https://blog.slowerzs.net/archive/fcsc-2021-shuffleme/</link>
       <pubDate>Mon, 03 May 2021 02:54:53 +0200</pubDate>
       <guid>https://blog.slowerzs.net/archive/fcsc-2021-shuffleme/</guid>
-      <description>ShuffleMe This challenge was part of the Reverse category, and was worth 200 points.&#xA;Retrouvez les entrées permettant de valider.&#xA;Discovery First, we identify what type of binary this :&#xA;$ file shuffleMe shuffleMe: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, for GNU/Linux 3.2.0, stripped This is a 64-bit ELF. It is stripped. Let&amp;rsquo;s try running the binary :&#xA;$ ./shuffleMe Usage: ./shuffleMe &amp;lt;secret&amp;gt; $ .</description>
+      <description>&lt;h2 id=&#34;shuffleme&#34;&gt;ShuffleMe&lt;/h2&gt;&#xA;&lt;p&gt;This challenge was part of the Reverse category, and was worth 200 points.&lt;/p&gt;&#xA;&lt;blockquote&gt;&#xA;&lt;p&gt;Retrouvez les entrées permettant de valider.&lt;/p&gt;&#xA;&lt;/blockquote&gt;&#xA;&lt;h2 id=&#34;discovery&#34;&gt;Discovery&lt;/h2&gt;&#xA;&lt;p&gt;First, we identify what type of binary this :&lt;/p&gt;&#xA;&lt;pre tabindex=&#34;0&#34;&gt;&lt;code class=&#34;language-raw&#34; data-lang=&#34;raw&#34;&gt;$ file shuffleMe &#xA;shuffleMe: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, for GNU/Linux 3.2.0, stripped&#xA;&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;This is a 64-bit ELF. It is stripped. Let&amp;rsquo;s try running the binary :&lt;/p&gt;&#xA;&lt;pre tabindex=&#34;0&#34;&gt;&lt;code class=&#34;language-raw&#34; data-lang=&#34;raw&#34;&gt;$ ./shuffleMe &#xA;Usage: ./shuffleMe &amp;lt;secret&amp;gt;&#xA;$ ./shuffleMe 1&#xA;bobcat&#xA;Nope.&#xA;&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;The program expects a secret as a first argument, then waits for input through stdin. Afterwards, it simply says &lt;code&gt;Nope.&lt;/code&gt;&#xA;Let&amp;rsquo;s have a look at the assembly of the program - starting with the main function.&lt;/p&gt;</description>
     </item>
     <item>
       <title>FCSC 2021 - Reporter</title>
       <link>https://blog.slowerzs.net/archive/fcsc-2021-reporter/</link>
       <pubDate>Sun, 02 May 2021 22:13:55 +0200</pubDate>
       <guid>https://blog.slowerzs.net/archive/fcsc-2021-reporter/</guid>
-      <description>Reporter This challenge was part of the Pwn category, and was worth 500 points.&#xA;Vous arrivez dans une nouvelle entreprise qui utilise un navigateur conçu en interne. Pouvez-vous obtenir un shell sur la machine de la personne qui vérifie les liens qu&amp;rsquo;on lui envoie ?&#xA;http://challenges2.france-cybersecurity-challenge.fr:4009/&#xA;For this challenge, we are given a binary, named fcsc_browser, and a link, where we can submit urls. With the description of the challenge and the category, we expect this challenge to be a browser exploitation challenge : the goal is to craft a malicious website, that upon visit with the fcsc_browser, will trigger arbitrary commands and execute a reverse shell, allowing us to gain access to the machine of the bot visiting the links.</description>
+      <description>&lt;h2 id=&#34;reporter&#34;&gt;Reporter&lt;/h2&gt;&#xA;&lt;p&gt;This challenge was part of the Pwn category, and was worth 500 points.&lt;/p&gt;&#xA;&lt;blockquote&gt;&#xA;&lt;p&gt;Vous arrivez dans une nouvelle entreprise qui utilise un navigateur conçu en interne. Pouvez-vous obtenir un shell sur la machine de la personne qui vérifie les liens qu&amp;rsquo;on lui envoie ?&lt;/p&gt;&#xA;&lt;/blockquote&gt;&#xA;&lt;blockquote&gt;&#xA;&lt;p&gt;&lt;a href=&#34;http://challenges2.france-cybersecurity-challenge.fr:4009/&#34;&gt;http://challenges2.france-cybersecurity-challenge.fr:4009/&lt;/a&gt;&lt;/p&gt;&#xA;&lt;/blockquote&gt;&#xA;&lt;p&gt;For this challenge, we are given a binary, named &lt;code&gt;fcsc_browser&lt;/code&gt;, and a link, where we can submit urls. With the description of the challenge and the category, we expect this challenge to be a browser exploitation challenge : the goal is to craft a malicious website, that upon visit with the &lt;code&gt;fcsc_browser&lt;/code&gt;, will trigger arbitrary commands and execute a reverse shell, allowing us to gain access to the machine of the bot visiting the links.&lt;/p&gt;</description>
     </item>
     <item>
       <title>FCSC 2021 - Blind Date</title>
       <link>https://blog.slowerzs.net/archive/fcsc-2021-blind-date/</link>
       <pubDate>Sun, 02 May 2021 21:43:51 +0200</pubDate>
       <guid>https://blog.slowerzs.net/archive/fcsc-2021-blind-date/</guid>
-      <description>Blind Date This challenge was part of the Pwn category, and was worth 500 points. Given the challenge name, and the fact that no binary is given, we expect this challenge to be some sort of blind rop challenge. The description of the challenge just gives us a hostname and a port&#xA;Une société souhaite créer un service en ligne protégeant les informations de ses clients. Pouvez-vous leur montrer qu&amp;rsquo;elle n&amp;rsquo;est pas sûre en lisant le fichier flag.</description>
+      <description>&lt;h2 id=&#34;blind-date&#34;&gt;Blind Date&lt;/h2&gt;&#xA;&lt;p&gt;This challenge was part of the Pwn category, and was worth 500 points. Given the challenge name, and the fact that no binary is given, we expect this challenge to be some sort of blind rop challenge.&#xA;The description of the challenge just gives us a hostname and a port&lt;/p&gt;&#xA;&lt;blockquote&gt;&#xA;&lt;p&gt;Une société souhaite créer un service en ligne protégeant les informations de ses clients. Pouvez-vous leur montrer qu&amp;rsquo;elle n&amp;rsquo;est pas sûre en lisant le fichier flag.txt sur leur serveur ? Les gérants de cette société n&amp;rsquo;ont pas souhaité vous donner ni le code source de leur solution, ni le binaire compilé, mais ils vous proposent uniquement un accès distant à leur service.&lt;/p&gt;</description>
     </item>
   </channel>
 </rss>
