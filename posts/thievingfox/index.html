@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 
-<head>
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title> ThievingFox - Remotely retrieving credentials from password managers and Windows utilities - Slowerzs&#39; blog </title>
@@ -12,9 +12,9 @@
     <meta property="og:site_name" content="Slowerzs&#39; blog" />
     <meta property="og:locale" content="en_US" />
     <meta property="og:type" content="article" />
-    <meta property="og:url" content="https://blog.slowerzs.net/posts/thievingfox/" />
+    <meta property="og:url" content="http://localhost:1313/posts/thievingfox/" />
     <meta property="og:title" content="ThievingFox - Remotely retrieving credentials from password managers and Windows utilities" />
-    <meta property="og:image" content="https://blog.slowerzs.net/images/small-favicon.png" />
+    <meta property="og:image" content="http://localhost:1313/images/small-favicon.png" />
     <meta property="og:description" content="" />
 
     <meta name="twitter:card" content=" summary_large_image" />
@@ -23,20 +23,20 @@
     <meta name="twitter:description" content="" />
     <meta name="twitter:card" content="summary">
     <meta name="twitter:site" content="@slowerzs">
-    <meta name="twitter:image" content="https://blog.slowerzs.net/images/small-favicon.png" />
+    <meta name="twitter:image" content="http://localhost:1313/images/small-favicon.png" />
 
-    <link rel="canonical" href="https://blog.slowerzs.net/posts/thievingfox/">
-    <link rel="alternate" href="https://blog.slowerzs.net/posts/index.xml" type="application/rss+xml" title="Slowerzs&#39; blog">
+    <link rel="canonical" href="http://localhost:1313/posts/thievingfox/">
+    <link rel="alternate" href="http://localhost:1313/posts/index.xml" type="application/rss+xml" title="Slowerzs&#39; blog">
 
-    <link rel="stylesheet" href="https://blog.slowerzs.net/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="http://localhost:1313/css/bootstrap.min.css" />
 
-    <link rel="stylesheet" href="https://blog.slowerzs.net/css/custom.css" />
-    <link rel="stylesheet" href="https://blog.slowerzs.net/css/syntax.css" />
+    <link rel="stylesheet" href="http://localhost:1313/css/custom.css" />
+    <link rel="stylesheet" href="http://localhost:1313/css/syntax.css" />
 
     
 
     <link rel="shortcut icon"
-        href="https://blog.slowerzs.net/images/favicon.png?">
+        href="http://localhost:1313/images/favicon.png?">
 
 </head>
 
@@ -80,10 +80,10 @@
         <div>
             <div class="row justify-content-center">
                 <div class="row">
-                    <a href="https://blog.slowerzs.net/">
+                    <a href="http://localhost:1313/">
                         <h1 class="name">Slowerzs&#39; blog</h1>
                     </a>
-                    <img id="switcher" onclick="switchTheme()" src="https://blog.slowerzs.net/images/theme-dark.svg" height="32px" width="32px"
+                    <img id="switcher" onclick="switchTheme()" src="http://localhost:1313/images/theme-dark.svg" height="32px" width="32px"
                         style="position: absolute; left: 93%; transform: translateX(-93%);" />
                 </div>
             </div>
@@ -92,7 +92,7 @@
                 <ul class="nav nav-primary">
                     
                     <li class="nav-item">
-                        <a class="nav-link" href="https://blog.slowerzs.net/">
+                        <a class="nav-link" href="http://localhost:1313/">
                             
                             Home
                         </a>
@@ -106,13 +106,6 @@
                     </li>
                     
                     <li class="nav-item">
-                        <a class="nav-link" href="https://twitter.com/slowerzs">
-                            
-                            Twitter
-                        </a>
-                    </li>
-                    
-                    <li class="nav-item">
                         <a class="nav-link" href="https://bsky.app/profile/slowerzs.net">
                             
                             Bluesky
@@ -120,14 +113,14 @@
                     </li>
                     
                     <li class="nav-item">
-                        <a class="nav-link" href="https://blog.slowerzs.net/posts/index.xml">
+                        <a class="nav-link" href="http://localhost:1313/posts/index.xml">
                             
                             RSS
                         </a>
                     </li>
                     
                     <li class="nav-item">
-                        <a class="nav-link" href="https://blog.slowerzs.net/archive">
+                        <a class="nav-link" href="http://localhost:1313/archive">
                             
                             Archive
                         </a>
@@ -192,13 +185,13 @@ The main idea is to hijack one of the imported DLL by the main executable, by ab
 <p>In the case of our targeted applications, DLL sideloading is impractical for Windows binaries - we don&rsquo;t want to overwrite a DLL inside <code>C:\Windows\System32</code> that is used by many other applications, which would risk our malicious DLL being loaded in an unexpected process.</p>
 <p>Consequently, DLL sideloading is only used for one application: <code>KeePassXC</code>, which ships with multiple DLL, that are nice targets for sideloading. One of the crypto library used by KeePassXC is targeted, <code>argon2.dll</code>, and is replaced by our hooking DLL:</p>
 <div class="figure">
-<p><img src="https://blog.slowerzs.net/images/ThievingFox/dll_hijacking.png" alt="hijacked argon2.dll"></p>
+<p><img src="http://localhost:1313/images/ThievingFox/dll_hijacking.png" alt="hijacked argon2.dll"></p>
 </div>
 <p>To ensure that the original functionalities offered by the DLL we are replacing still work, we re-export the symbols and forward them to the original DLL.
 To automate this process, this is done during compilation, using Rust build scripts (an example can be found <a href="https://github.com/Slowerzs/ThievingFox/blob/main/consentfox/build.rs">here</a>).</p>
 <p>This results in the hooking DLL exporting the following symbols :</p>
 <div class="figure">
-<p><img src="https://blog.slowerzs.net/images/ThievingFox/exports_forwarded_to_argon2_bak.png" alt="argon2.dll exports"></p>
+<p><img src="http://localhost:1313/images/ThievingFox/exports_forwarded_to_argon2_bak.png" alt="argon2.dll exports"></p>
 </div>
 <p>As of the first version of <code>ThievingFox</code>, <code>KeePassXC</code> is the only application where DLL proxying is used.</p>
 <h4 id="hooking-keepassxc">Hooking KeePassXC</h4>
@@ -208,7 +201,7 @@ To automate this process, this is done during compilation, using Rust build scri
 <p>Now that we know what function we want to target, we have to perform the actual hooking. I chose to perform simple in-memory byte-patching. To do so I used the <a href="https://github.com/TsudaKageyu/minhook">minhook</a> library, due to its simplicity, its robustness, as well as being easily cross-compilable with Rust (using the <a href="https://crates.io/crates/minhook-sys/">minhook-sys crate</a>).</p>
 <p>All of this makes the retrieval of the maskerkey (and potential keyfile) possible whenever a KeePassXC application unlocks a database :</p>
 <div class="figure">
-<p><img src="https://blog.slowerzs.net/images/ThievingFox/keepassxc_poisoning.png" alt="KeePassXC masterkey and keyfile retreived with ThievingFox"></p>
+<p><img src="http://localhost:1313/images/ThievingFox/keepassxc_poisoning.png" alt="KeePassXC masterkey and keyfile retreived with ThievingFox"></p>
 </div>
 <p>A similar approach was used to hook other native applications. To identify what exported symbols to use, a combinaison of <a href="http://www.rohitab.com/apimonitor">API Monitor</a> and manual reverse engineering was used.</p>
 <h3 id="com-hijacking">COM Hijacking</h3>
@@ -217,7 +210,7 @@ To automate this process, this is done during compilation, using Rust build scri
 <p>Not all classes can be hijacked, the executable that implements the functionalities of the class must be implemented in-process. To determine whether a class is suitable, the necessary information is stored is the registry keys associated with the Class ID (CLSID).</p>
 <p>Identifying potential COM classes that can be hijacked for a target process can be easily done using <a href="https://learn.microsoft.com/en-us/sysinternals/downloads/procmon">ProcMon</a> :</p>
 <div class="figure">
-<p><img src="https://blog.slowerzs.net/images/ThievingFox/com_hijacking_procmon.png" alt="Using Procmon to identify classes that can be hijacked"></p>
+<p><img src="http://localhost:1313/images/ThievingFox/com_hijacking_procmon.png" alt="Using Procmon to identify classes that can be hijacked"></p>
 </div>
 <p>This process has been repeated for all targeted applications. For each one, a CLSID that was rarely used by other application has been selected.</p>
 <h4 id="hooking-rdcman">Hooking RDCMan</h4>
@@ -225,7 +218,7 @@ To automate this process, this is done during compilation, using Rust build scri
 All these functions are implemented inside the <code>mstscax.dll</code> DLL. In particular, the function used to hand over the password of the account used for authentication is <a href="https://learn.microsoft.com/en-us/windows/win32/termserv/imsrdpclientadvancedsettings-cleartextpassword"><code>put_ClearTextPassword</code></a></p>
 <p>Unfortunately, the symbols for these functions are not exported directly :</p>
 <div class="figure">
-<p><img src="https://blog.slowerzs.net/images/ThievingFox/mstscax_no_exports.png" alt="Exports of mstscax which do not contain the targeted method"></p>
+<p><img src="http://localhost:1313/images/ThievingFox/mstscax_no_exports.png" alt="Exports of mstscax which do not contain the targeted method"></p>
 </div>
 <p>But, since the <code>mstscax.dll</code> DLL which implements COM method is an in-process server, there is no marshalling to invoke COM methods. This means that we can instantiate our own object, look inside its <code>vtable</code> to find directly the address in memory of the functions we&rsquo;re interested in (the ones related to authentication), and hook them, as we&rsquo;ve done before for KeePassXC !</p>
 <p>This is the approach that is used for both <code>RDCMan</code> and <code>MobaXTerm</code>, which both use a different version of the <code>IMsRdpClient</code> interface.</p>
@@ -234,7 +227,7 @@ All these functions are implemented inside the <code>mstscax.dll</code> DLL. In 
 <p><code>LogonUI.exe</code> is the process responsible for handling credentials when a user who is physically present on the computer unlocks his session. In addition, <code>LogonUI.exe</code> also handles credentials used for RDP connections (at least, when Restricted Admin is not used).</p>
 <p>This means that if a server is poisoned, and an administrator uses RDP to connect to this server, its credentials are captured:</p>
 <div class="figure">
-<p><img src="https://blog.slowerzs.net/images/ThievingFox/logonui_poisoning.png" alt="Poisoning of LogonUI.exe"></p>
+<p><img src="http://localhost:1313/images/ThievingFox/logonui_poisoning.png" alt="Poisoning of LogonUI.exe"></p>
 </div>
 <p>While not all credentials that end up in <code>lsass.exe</code> go through <code>LogonUI.exe</code>, but a significant proportion of them do, which is a different way of gathering credentials without touching the actual <code>lsass.exe</code> process.</p>
 <h2 id="net-framework-applications">.NET Framework applications</h2>
@@ -246,13 +239,13 @@ An <code>AppDomainManager</code> is a managed library that controls how <code>Ap
 <p>The only target application (for now) written in .NET Framework is KeePass.</p>
 <p>ThievingFox edits the configuration file to add an <code>AppDomainManager</code>, which points to our hooking library:</p>
 <div class="figure">
-<p><img src="https://blog.slowerzs.net/images/ThievingFox/appdomainmanager_injection.png" alt="Edited KeePass.exe.config"></p>
+<p><img src="http://localhost:1313/images/ThievingFox/appdomainmanager_injection.png" alt="Edited KeePass.exe.config"></p>
 </div>
 <h4 id="hooking-keepass">Hooking KeePass</h4>
 <p>Unlike native application, hooking the main binary itself is possible : reflection enables us to find functions inside the main assembly that receives the credentials, without any byte-pattern to identify functions.</p>
 <p>The actual hooking is also different: the function that we will be hooking is a function written in .NET, so it will be much easier to manipulate its arguments if our hook is also in managed code.</p>
 <div class="figure">
-<p><img src="https://blog.slowerzs.net/images/ThievingFox/keepass_poisoning.png" alt="Image of KeePass masterkey and keyfile retreived with ThievingFox"></p>
+<p><img src="http://localhost:1313/images/ThievingFox/keepass_poisoning.png" alt="Image of KeePass masterkey and keyfile retreived with ThievingFox"></p>
 </div>
 <p>To perform the patch we retrieve the native function pointer associated with the <code>Method</code> objects associated with the hook and the target function, and simply switch the pointers.</p>
 <p>Before switching pointers, we ask the CLR to JIT-compile the hook and the target function, to ensure they are implemented in native code and are not emulated by the CLR VM, and do not move in memory. I also ensure that both the hook and the original function have the same prototype, to be able to manipulate the arguments.</p>
